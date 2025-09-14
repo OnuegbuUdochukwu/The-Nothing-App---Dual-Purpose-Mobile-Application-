@@ -1,0 +1,28 @@
+export const Colors = {
+  personal: {
+    background: '#000000',
+    surface: '#1a1a1a',
+    text: '#ffffff',
+    textSecondary: '#cccccc',
+    accent: '#4DB6AC',
+    border: '#333333',
+  },
+  baby: {
+    background: '#ffffff',
+    surface: '#f8f9fa',
+    text: '#000000',
+    textSecondary: '#666666',
+    yellow: '#FFD700',
+    blue: '#4169E1',
+    red: '#FF4500',
+    green: '#32CD32',
+  },
+  common: {
+    white: '#ffffff',
+    black: '#000000',
+    gray: '#808080',
+    success: '#4CAF50',
+    warning: '#FF9800',
+    error: '#F44336',
+  }
+};
