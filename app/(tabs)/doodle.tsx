@@ -1,30 +1,41 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
 import { Trash2, RotateCcw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import { Colors } from '@/constants/Colors';
+import { useSubscription } from '@/hooks/useSubscription';
 import { DoodleStroke } from '@/types';
 
 export default function DoodleScreen() {
+  const { isPremium } = useSubscription();
   const [strokes, setStrokes] = useState<DoodleStroke[]>([]);
   const [currentColor, setCurrentColor] = useState(Colors.personal.accent);
   const [strokeWidth, setStrokeWidth] = useState(3);
 
-  const colors = [
-    Colors.personal.accent,
-    Colors.common.white,
-    Colors.personal.textSecondary,
-    '#FF6B6B',
-    '#4ECDC4',
-    '#45B7D1'
-  ];
+  // Premium gating: only premium users get full palette and brush styles
+  const colors = isPremium
+    ? [
+        Colors.personal.accent,
+        Colors.common.white,
+        Colors.personal.textSecondary,
+        '#FF6B6B',
+        '#4ECDC4',
+        '#45B7D1',
+      ]
+    : [Colors.personal.accent];
 
-  const strokeWidths = [2, 4, 8];
+  const strokeWidths = isPremium ? [2, 4, 8] : [3];
 
   const handleStrokeComplete = (stroke: DoodleStroke) => {
-    setStrokes(prev => [...prev, stroke]);
+    setStrokes((prev) => [...prev, stroke]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
@@ -34,75 +45,102 @@ export default function DoodleScreen() {
   };
 
   const undo = () => {
-    setStrokes(prev => prev.slice(0, -1));
+    setStrokes((prev) => prev.slice(0, -1));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  return React.createElement(
-    SafeAreaView, 
-    { style: styles.container },
-    React.createElement(View, { style: styles.toolbar },
-      React.createElement(Text, { style: styles.title }, "Adult Doodle"),
-      
-      React.createElement(View, { style: styles.controls },
-        React.createElement(View, { style: styles.colorPalette },
-          colors.map((color) => 
-            React.createElement(TouchableOpacity, {
-              key: color,
-              style: [
-                styles.colorButton,
-                { backgroundColor: color },
-                currentColor === color && styles.selectedColor
-              ],
-              onPress: () => {
-                setCurrentColor(color);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
-            })
-          )
-        ),
-
-        React.createElement(View, { style: styles.widthControls },
-          strokeWidths.map((width) => 
-            React.createElement(TouchableOpacity, {
-              key: width,
-              style: [
-                styles.widthButton,
-                strokeWidth === width && styles.selectedWidth
-              ],
-              onPress: () => {
-                setStrokeWidth(width);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }
-            }, 
-              React.createElement(View, {
-                style: [
-                  styles.widthIndicator,
-                  { width: width * 2, height: width * 2, backgroundColor: currentColor }
-                ]
-              })
-            )
-          )
-        ),
-
-        React.createElement(View, { style: styles.actions },
-          React.createElement(TouchableOpacity, { style: styles.actionButton, onPress: undo },
-            React.createElement(RotateCcw, { size: 20, color: Colors.personal.text })
-          ),
-          React.createElement(TouchableOpacity, { style: styles.actionButton, onPress: clearCanvas },
-            React.createElement(Trash2, { size: 20, color: Colors.personal.text })
-          )
-        )
-      ),
-
-      React.createElement(DrawingCanvas, {
-        strokes: strokes,
-        currentColor: currentColor,
-        strokeWidth: strokeWidth,
-        onStrokeComplete: handleStrokeComplete,
-        backgroundColor: Colors.personal.background
-      })
-    )
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.toolbar}>
+        <Text style={styles.title}>Adult Doodle</Text>
+        <View style={styles.controls}>
+          <View style={styles.colorPalette}>
+            {colors.map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={[
+                  styles.colorButton,
+                  { backgroundColor: color },
+                  currentColor === color && styles.selectedColor,
+                ]}
+                onPress={() => {
+                  setCurrentColor(color);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                disabled={!isPremium && color !== Colors.personal.accent}
+              />
+            ))}
+          </View>
+          <View style={styles.widthControls}>
+            {strokeWidths.map((width) => (
+              <TouchableOpacity
+                key={width}
+                style={[
+                  styles.widthButton,
+                  strokeWidth === width && styles.selectedWidth,
+                ]}
+                onPress={() => {
+                  setStrokeWidth(width);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                disabled={!isPremium && width !== 3}
+              >
+                <View
+                  style={[
+                    styles.widthIndicator,
+                    {
+                      width: width * 2,
+                      height: width * 2,
+                      backgroundColor: currentColor,
+                    },
+                  ]}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.actionButton} onPress={undo}>
+              <RotateCcw size={20} color={Colors.personal.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={clearCanvas}>
+              <Trash2 size={20} color={Colors.personal.text} />
+            </TouchableOpacity>
+            {/* Premium-only: Save/Export button placeholder */}
+            {isPremium && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  /* TODO: implement save/export */
+                }}
+              >
+                <Text style={{ color: Colors.personal.text, fontSize: 12 }}>
+                  Save
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+      <DrawingCanvas
+        strokes={strokes}
+        currentColor={currentColor}
+        strokeWidth={strokeWidth}
+        onStrokeComplete={handleStrokeComplete}
+        backgroundColor={Colors.personal.background}
+      />
+      {/* Premium upsell for free users */}
+      {!isPremium && (
+        <View style={{ padding: 16, alignItems: 'center' }}>
+          <Text
+            style={{ color: Colors.personal.textSecondary, marginBottom: 8 }}
+          >
+            Unlock more colors, brush styles, and save your doodles with
+            Premium!
+          </Text>
+          {/* You can add a PremiumModal or upgrade button here */}
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
+import { Animated } from 'react-native';
 import {
   View,
   Text,
@@ -47,6 +48,29 @@ Notifications.setNotificationHandler({
 });
 
 export default function FocusScreen() {
+  // Animated timer opacity
+  const timerOpacity = useRef(new Animated.Value(0.3)).current;
+  const timerFadeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ...state declarations...
+
+  // (move this useEffect after all state declarations)
+
+  const showTimer = () => {
+    Animated.timing(timerOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    if (timerFadeTimeout.current) clearTimeout(timerFadeTimeout.current);
+    timerFadeTimeout.current = setTimeout(() => {
+      Animated.timing(timerOpacity, {
+        toValue: 0.3,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }, 2500);
+  };
   // PIN setting dialog state
   const [showSetPin, setShowSetPin] = useState(false);
   const [newPin, setNewPin] = useState('');
@@ -92,6 +116,15 @@ export default function FocusScreen() {
   const { isPremium } = useSubscription();
 
   const [parentalPin, setParentalPin] = useState('1234');
+  // Reset timer opacity when session starts
+  useEffect(() => {
+    if (isActive) {
+      timerOpacity.setValue(0.3);
+    }
+    return () => {
+      if (timerFadeTimeout.current) clearTimeout(timerFadeTimeout.current);
+    };
+  }, [isActive]);
   useEffect(() => {
     (async () => {
       const storedPin = await AsyncStorage.getItem('parentalPin');
@@ -100,6 +133,7 @@ export default function FocusScreen() {
   }, []);
 
   const durations = [5, 15, 30, 60];
+  const [customDuration, setCustomDuration] = useState('');
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -289,7 +323,13 @@ export default function FocusScreen() {
             onHandlerStateChange={handleStateChange}
           >
             <View style={styles.timeDisplay}>
-              <Text style={styles.timeText}>{formatTime(timeLeft)}</Text>
+              <TouchableOpacity activeOpacity={1} onPress={showTimer}>
+                <Animated.Text
+                  style={[styles.timeText, { opacity: timerOpacity }]}
+                >
+                  {formatTime(timeLeft)}
+                </Animated.Text>
+              </TouchableOpacity>
               <View
                 style={[
                   styles.swipeIndicator,
@@ -324,28 +364,12 @@ export default function FocusScreen() {
 
     return (
       <View style={styles.insightsOverlay}>
-        <View style={styles.insightsContainer}>
-          <View style={styles.insightsHeader}>
-            <Text style={styles.insightsTitle}>Focus Insights</Text>
-            <TouchableOpacity onPress={() => setShowInsights(false)}>
-              <Text style={styles.closeButton}>×</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.insightsContent}>
+        <ScrollView>
+          <View style={styles.insightsContainer}>
+            <Text style={styles.insightsHeader}>Focus Insights</Text>
             <View style={styles.insightCard}>
               <View style={styles.insightIconContainer}>
-                <Clock size={24} color={Colors.personal.accent} />
-              </View>
-              <View>
-                <Text style={styles.insightLabel}>Total Focus Time</Text>
-                <Text style={styles.insightValue}>{totalMinutes} minutes</Text>
-              </View>
-            </View>
-
-            <View style={styles.insightCard}>
-              <View style={styles.insightIconContainer}>
-                <Calendar size={24} color={Colors.personal.accent} />
+                <BarChart size={24} color={Colors.personal.accent} />
               </View>
               <View>
                 <Text style={styles.insightLabel}>Sessions Completed</Text>
@@ -354,7 +378,6 @@ export default function FocusScreen() {
                 </Text>
               </View>
             </View>
-
             <View style={styles.insightCard}>
               <View style={styles.insightIconContainer}>
                 <BarChart size={24} color={Colors.personal.accent} />
@@ -370,7 +393,6 @@ export default function FocusScreen() {
                 </Text>
               </View>
             </View>
-
             <Text style={styles.sessionHistoryTitle}>Recent Sessions</Text>
             {sessionHistory.length > 0 ? (
               sessionHistory.map((session, index) => {
@@ -405,8 +427,8 @@ export default function FocusScreen() {
             ) : (
               <Text style={styles.noSessionsText}>No session history yet</Text>
             )}
-          </ScrollView>
-        </View>
+          </View>
+        </ScrollView>
       </View>
     );
   };
@@ -548,6 +570,18 @@ export default function FocusScreen() {
 }
 
 const styles = StyleSheet.create({
+  customDurationInput: {
+    borderWidth: 1,
+    borderColor: Colors.personal.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: Colors.personal.text,
+    marginLeft: 8,
+    minWidth: 80,
+    backgroundColor: Colors.personal.surface,
+  },
   insightsOverlay: {
     position: 'absolute',
     top: 0,
