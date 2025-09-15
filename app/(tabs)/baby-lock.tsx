@@ -1,3 +1,4 @@
+import { BackHandler } from 'react-native';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as SystemUI from 'expo-system-ui';
 import { Colors } from '@/constants/Colors';
 import * as Notifications from 'expo-notifications';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -80,6 +82,23 @@ export default function BabyLockScreen() {
   };
 
   useEffect(() => {
+  // Block hardware back button and enable immersive mode when locked (Android only)
+  useEffect(() => {
+    if (Platform.OS === 'android' && isLocked) {
+      // Hide navigation bar and block hardware back button
+      NavigationBar.setBehaviorAsync('inset-swipe');
+      NavigationBar.setVisibilityAsync('hidden');
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
+      return () => {
+        NavigationBar.setBehaviorAsync('overlay-swipe');
+        NavigationBar.setVisibilityAsync('visible');
+        backHandler.remove();
+      };
+    } else if (Platform.OS === 'android') {
+      NavigationBar.setBehaviorAsync('overlay-swipe');
+      NavigationBar.setVisibilityAsync('visible');
+    }
+  }, [isLocked]);
     let interval: ReturnType<typeof setInterval> | null = null;
     if (isLocked && timeLeft > 0) {
       if (Platform.OS === 'android') {
