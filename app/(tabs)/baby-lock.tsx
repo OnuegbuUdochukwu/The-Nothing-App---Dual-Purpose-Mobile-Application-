@@ -82,23 +82,26 @@ export default function BabyLockScreen() {
   };
 
   useEffect(() => {
-  // Block hardware back button and enable immersive mode when locked (Android only)
-  useEffect(() => {
-    if (Platform.OS === 'android' && isLocked) {
-      // Hide navigation bar and block hardware back button
-      NavigationBar.setBehaviorAsync('inset-swipe');
-      NavigationBar.setVisibilityAsync('hidden');
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => true);
-      return () => {
+    // Block hardware back button and enable immersive mode when locked (Android only)
+    useEffect(() => {
+      if (Platform.OS === 'android' && isLocked) {
+        // Hide navigation bar and block hardware back button
+        NavigationBar.setBehaviorAsync('inset-swipe');
+        NavigationBar.setVisibilityAsync('hidden');
+        const backHandler = BackHandler.addEventListener(
+          'hardwareBackPress',
+          () => true
+        );
+        return () => {
+          NavigationBar.setBehaviorAsync('overlay-swipe');
+          NavigationBar.setVisibilityAsync('visible');
+          backHandler.remove();
+        };
+      } else if (Platform.OS === 'android') {
         NavigationBar.setBehaviorAsync('overlay-swipe');
         NavigationBar.setVisibilityAsync('visible');
-        backHandler.remove();
-      };
-    } else if (Platform.OS === 'android') {
-      NavigationBar.setBehaviorAsync('overlay-swipe');
-      NavigationBar.setVisibilityAsync('visible');
-    }
-  }, [isLocked]);
+      }
+    }, [isLocked]);
     let interval: ReturnType<typeof setInterval> | null = null;
     if (isLocked && timeLeft > 0) {
       if (Platform.OS === 'android') {
