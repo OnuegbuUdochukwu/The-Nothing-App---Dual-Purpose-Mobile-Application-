@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, Baby } from 'lucide-react-native';
@@ -12,42 +12,58 @@ interface OnboardingScreenProps {
 }
 
 export default function OnboardingScreen({ onModeSelect }: OnboardingScreenProps) {
-  return (
-    <LinearGradient
-      colors={['#000000', '#1a1a1a']}
-      style={styles.container}
-    >
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Nothing</Text>
-        <Text style={styles.subtitle}>Choose your experience</Text>
-        
-        <View style={styles.modesContainer}>
-          <TouchableOpacity 
-            style={[styles.modeCard, styles.personalCard]}
-            onPress={() => onModeSelect('personal')}
-            activeOpacity={0.8}
-          >
-            <User size={48} color={Colors.personal.accent} />
-            <Text style={styles.modeTitle}>Personal Mode</Text>
-            <Text style={styles.modeDescription}>
-              Focus, wellness, and distraction-free time
-            </Text>
-          </TouchableOpacity>
+  return React.createElement(
+    LinearGradient,
+    {
+      colors: ['#000000', '#1a1a1a'],
+      style: styles.container
+    },
+    React.createElement(
+      View, 
+      { style: styles.content },
+      React.createElement(Text, { style: styles.title }, "Welcome to Nothing"),
+      React.createElement(Text, { style: styles.subtitle }, "Choose your experience"),
+      
+      React.createElement(
+        View, 
+        { style: styles.modesContainer },
+        React.createElement(
+          TouchableOpacity, 
+          {
+            style: [styles.modeCard, styles.personalCard],
+            onPress: () => onModeSelect('personal'),
+            activeOpacity: 0.8
+          },
+          React.createElement(User, { size: 48, color: Colors.personal.accent }),
+          React.createElement(Text, { style: styles.modeTitle }, "Personal Mode"),
+          React.createElement(
+            Text, 
+            { style: styles.modeDescription },
+            "Focus, wellness, and distraction-free time"
+          )
+        ),
 
-          <TouchableOpacity 
-            style={[styles.modeCard, styles.babyCard]}
-            onPress={() => onModeSelect('baby')}
-            activeOpacity={0.8}
-          >
-            <Baby size={48} color={Colors.baby.blue} />
-            <Text style={[styles.modeTitle, { color: Colors.baby.text }]}>Baby Mode</Text>
-            <Text style={[styles.modeDescription, { color: Colors.baby.textSecondary }]}>
-              Safe digital space for little ones
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </LinearGradient>
+        React.createElement(
+          TouchableOpacity, 
+          {
+            style: [styles.modeCard, styles.babyCard],
+            onPress: () => onModeSelect('baby'),
+            activeOpacity: 0.8
+          },
+          React.createElement(Baby, { size: 48, color: Colors.baby.blue }),
+          React.createElement(
+            Text, 
+            { style: [styles.modeTitle, { color: Colors.baby.text }] },
+            "Baby Mode"
+          ),
+          React.createElement(
+            Text, 
+            { style: [styles.modeDescription, { color: Colors.baby.textSecondary }] },
+            "Safe digital space for little ones"
+          )
+        )
+      )
+    )
   );
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Redirect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,19 +14,20 @@ export default function IndexScreen() {
   };
 
   if (isLoading) {
-    return (
-      <LinearGradient
-        colors={['#000000', '#1a1a1a']}
-        style={styles.loadingContainer}
-      />
+    return React.createElement(
+      LinearGradient,
+      {
+        colors: ['#000000', '#1a1a1a'],
+        style: styles.loadingContainer
+      }
     );
   }
 
   if (mode) {
-    return <Redirect href="/(tabs)" />;
+    return React.createElement(Redirect, { href: "/(tabs)" });
   }
 
-  return <OnboardingScreen onModeSelect={handleModeSelect} />;
+  return React.createElement(OnboardingScreen, { onModeSelect: handleModeSelect });
 }
 
 const styles = StyleSheet.create({

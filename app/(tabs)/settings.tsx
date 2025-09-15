@@ -1,14 +1,19 @@
-import React from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Baby, Palette, Bell, Shield, Info, LogOut } from 'lucide-react-native';
+import { User, Baby, Palette, Bell, Shield, Info, LogOut, Crown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppMode } from '@/hooks/useAppMode';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Colors } from '@/constants/Colors';
 import { AppMode } from '@/types';
+import PremiumModal from '@/components/PremiumModal';
 
 export default function SettingsScreen() {
   const { mode, saveMode } = useAppMode();
+  const { isPremium, setPremiumStatus } = useSubscription();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const isPersonalMode = mode === 'personal';
   const currentColors = isPersonalMode ? Colors.personal : Colors.baby;
@@ -34,11 +39,7 @@ export default function SettingsScreen() {
   };
 
   const showPremiumInfo = () => {
-    Alert.alert(
-      'Premium Features',
-      'Unlock advanced doodle tools, wellness insights, ambient sounds, and more!\n\nPremium features coming soon.',
-      [{ text: 'Got it', style: 'default' }]
-    );
+    setShowPremiumModal(true);
   };
 
   const showAbout = () => {
@@ -98,99 +99,134 @@ export default function SettingsScreen() {
     </TouchableOpacity>
   );
 
-  return (
-    <LinearGradient
-      colors={
-        isPersonalMode 
-          ? [Colors.personal.background, Colors.personal.surface]
-          : [Colors.common.white, Colors.baby.surface]
-      }
-      style={styles.container}
-    >
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <View style={[
-            styles.modeIndicator,
-            { backgroundColor: isPersonalMode ? Colors.personal.accent : Colors.baby.blue }
-          ]}>
-            {isPersonalMode ? (
-              <User size={24} color={Colors.common.white} />
-            ) : (
-              <Baby size={24} color={Colors.common.white} />
-            )}
-          </View>
-          <Text style={[styles.title, { color: currentColors.text }]}>Settings</Text>
-          <Text style={[styles.subtitle, { color: currentColors.textSecondary }]}>
-            Currently in {isPersonalMode ? 'Personal' : 'Baby'} Mode
-          </Text>
-        </View>
+  return React.createElement(
+    LinearGradient,
+    {
+      colors: isPersonalMode 
+        ? [Colors.personal.background, Colors.personal.surface]
+        : [Colors.common.white, Colors.baby.surface],
+      style: styles.container
+    },
+    React.createElement(
+      ScrollView, 
+      { style: styles.content },
+      React.createElement(
+        View, 
+        { style: styles.header },
+        React.createElement(
+          View, 
+          {
+            style: [
+              styles.modeIndicator,
+              { backgroundColor: isPersonalMode ? Colors.personal.accent : Colors.baby.blue }
+            ]
+          },
+          isPersonalMode 
+            ? React.createElement(User, { size: 24, color: Colors.common.white })
+            : React.createElement(Baby, { size: 24, color: Colors.common.white })
+        ),
+        React.createElement(
+          Text, 
+          { style: [styles.title, { color: currentColors.text }] }, 
+          "Settings"
+        ),
+        React.createElement(
+          Text, 
+          { style: [styles.subtitle, { color: currentColors.textSecondary }] },
+          `Currently in ${isPersonalMode ? 'Personal' : 'Baby'} Mode`
+        )
+      ),
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentColors.textSecondary }]}>
-            App Mode
-          </Text>
-          
-          <SettingItem
-            icon={isPersonalMode ? 
-              <Baby size={20} color={Colors.baby.blue} /> :
-              <User size={20} color={Colors.personal.accent} />
-            }
-            title={`Switch to ${isPersonalMode ? 'Baby' : 'Personal'} Mode`}
-            subtitle={isPersonalMode ? 
-              'Safe digital space for little ones' : 
-              'Focus, wellness, and distraction-free time'
-            }
-            onPress={switchMode}
-          />
-        </View>
+      React.createElement(
+        View, 
+        { style: styles.section },
+        React.createElement(
+          Text, 
+          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
+          "App Mode"
+        ),
+        React.createElement(
+          SettingItem,
+          {
+            icon: isPersonalMode 
+              ? React.createElement(Baby, { size: 20, color: Colors.baby.blue })
+              : React.createElement(User, { size: 20, color: Colors.personal.accent }),
+            title: `Switch to ${isPersonalMode ? 'Baby' : 'Personal'} Mode`,
+            subtitle: isPersonalMode 
+              ? 'Safe digital space for little ones'
+              : 'Focus, wellness, and distraction-free time',
+            onPress: switchMode
+          }
+        )
+      ),
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentColors.textSecondary }]}>
-            Features
-          </Text>
-          
-          <SettingItem
-            icon={<Palette size={20} color={Colors.common.warning} />}
-            title="Premium Features"
-            subtitle="Advanced tools, insights, and sounds"
-            onPress={showPremiumInfo}
-          />
-          
-          {isPersonalMode && (
-            <SettingItem
-              icon={<Bell size={20} color={Colors.personal.accent} />}
-              title="Notifications"
-              subtitle="Focus session reminders"
-              onPress={() => Alert.alert('Coming Soon', 'Notification settings will be available in a future update.')}
-            />
-          )}
-        </View>
+      React.createElement(
+        View, 
+        { style: styles.section },
+        React.createElement(
+          Text, 
+          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
+          "Features"
+        ),
+        React.createElement(
+          SettingItem,
+          {
+            icon: React.createElement(Crown, { size: 20, color: Colors.common.gold }),
+            title: "Premium Features",
+            subtitle: isPremium ? "Active - Enjoy all premium features" : "Upgrade for advanced features",
+            onPress: showPremiumInfo
+          }
+        ),
+        isPersonalMode && React.createElement(
+          SettingItem,
+          {
+            icon: React.createElement(Bell, { size: 20, color: Colors.personal.accent }),
+            title: "Notifications",
+            subtitle: "Focus session reminders",
+            onPress: () => Alert.alert('Coming Soon', 'Notification settings will be available in a future update.')
+          }
+        )
+      ),
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: currentColors.textSecondary }]}>
-            Support
-          </Text>
-          
-          <SettingItem
-            icon={<Info size={20} color={Colors.personal.accent} />}
-            title="About Nothing App"
-            subtitle="Version 1.0"
-            onPress={showAbout}
-          />
-          
-          <SettingItem
-            icon={<Shield size={20} color={Colors.common.success} />}
-            title="Privacy & Safety"
-            subtitle="Your data stays on your device"
-            onPress={() => Alert.alert(
+      React.createElement(
+        View, 
+        { style: styles.section },
+        React.createElement(
+          Text, 
+          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
+          "Support"
+        ),
+        React.createElement(
+          SettingItem,
+          {
+            icon: React.createElement(Info, { size: 20, color: Colors.personal.accent }),
+            title: "About Nothing App",
+            subtitle: "Version 1.0",
+            onPress: showAbout
+          }
+        ),
+        React.createElement(
+          SettingItem,
+          {
+            icon: React.createElement(Shield, { size: 20, color: Colors.common.success }),
+            title: "Privacy & Safety",
+            subtitle: "Your data stays on your device",
+            onPress: () => Alert.alert(
               'Privacy & Safety',
               'The Nothing App is designed with privacy in mind:\n\n• All your data stays on your device\n• No personal information is collected\n• Baby Mode provides a safe, locked environment\n• No internet connection required for core features',
               [{ text: 'Got it', style: 'default' }]
-            )}
-          />
-        </View>
-      </ScrollView>
-    </LinearGradient>
+            )
+          }
+        )
+      )
+    ),
+    React.createElement(
+      PremiumModal, 
+      {
+        visible: showPremiumModal,
+        onClose: () => setShowPremiumModal(false)
+      }
+    )
   );
 }
 

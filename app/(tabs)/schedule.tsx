@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus, Clock, Calendar, Trash2 } from 'lucide-react-native';
@@ -19,30 +20,30 @@ export default function ScheduleScreen() {
       [
         {
           text: 'Cancel',
-          style: 'cancel',
+          style: 'cancel'
         },
         {
-          text: 'Quick Add',
+          text: 'Add',
           onPress: () => {
             const newSession: ScheduledSession = {
               id: Date.now().toString(),
-              time: times[0],
-              duration: durations[0],
-              repeat: 'daily',
-              enabled: true,
+              time: times[Math.floor(Math.random() * times.length)],
+              duration: durations[Math.floor(Math.random() * durations.length)],
+              repeat: Math.random() > 0.5 ? 'daily' : 'once',
+              enabled: true
             };
             setSessions(prev => [...prev, newSession]);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          },
-        },
+          }
+        }
       ]
     );
   };
 
   const toggleSession = (id: string) => {
-    setSessions(prev => 
-      prev.map(session => 
-        session.id === id 
+    setSessions(prev =>
+      prev.map(session =>
+        session.id === id
           ? { ...session, enabled: !session.enabled }
           : session
       )
@@ -55,73 +56,73 @@ export default function ScheduleScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
-  return (
-    <LinearGradient
-      colors={[Colors.personal.background, Colors.personal.surface]}
-      style={styles.container}
-    >
-      <ScrollView style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Nothing Scheduler</Text>
-          <TouchableOpacity style={styles.addButton} onPress={addSession}>
-            <Plus size={20} color={Colors.personal.background} />
-            <Text style={styles.addButtonText}>Add Session</Text>
-          </TouchableOpacity>
-        </View>
+  return React.createElement(
+    LinearGradient,
+    {
+      colors: [Colors.personal.background, Colors.personal.surface],
+      style: styles.container
+    },
+    React.createElement(ScrollView, { style: styles.content },
+      React.createElement(View, { style: styles.header },
+        React.createElement(Text, { style: styles.title }, "Nothing Scheduler"),
+        React.createElement(TouchableOpacity, { style: styles.addButton, onPress: addSession },
+          React.createElement(Plus, { size: 20, color: Colors.personal.background }),
+          React.createElement(Text, { style: styles.addButtonText }, "Add Session")
+        )
+      ),
 
-        {sessions.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Calendar size={48} color={Colors.personal.textSecondary} />
-            <Text style={styles.emptyText}>No scheduled sessions</Text>
-            <Text style={styles.emptySubtext}>
-              Tap "Add Session" to schedule your focus time
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.sessionsList}>
-            {sessions.map((session) => (
-              <View key={session.id} style={styles.sessionCard}>
-                <View style={styles.sessionInfo}>
-                  <View style={styles.sessionTime}>
-                    <Clock size={16} color={Colors.personal.accent} />
-                    <Text style={styles.timeText}>{session.time}</Text>
-                  </View>
-                  <Text style={styles.durationText}>{session.duration} minutes</Text>
-                  <Text style={styles.repeatText}>
-                    {session.repeat === 'daily' ? 'Daily' : 
-                     session.repeat === 'weekdays' ? 'Weekdays' : 'Once'}
-                  </Text>
-                </View>
+      sessions.length === 0 
+        ? React.createElement(View, { style: styles.emptyState },
+            React.createElement(Calendar, { size: 48, color: Colors.personal.textSecondary }),
+            React.createElement(Text, { style: styles.emptyText }, "No scheduled sessions"),
+            React.createElement(Text, { style: styles.emptySubtext },
+              "Tap \"Add Session\" to schedule your focus time"
+            )
+          )
+        : React.createElement(View, { style: styles.sessionsList },
+            sessions.map((session) => 
+              React.createElement(View, { key: session.id, style: styles.sessionCard },
+                React.createElement(View, { style: styles.sessionInfo },
+                  React.createElement(View, { style: styles.sessionTime },
+                    React.createElement(Clock, { size: 16, color: Colors.personal.accent }),
+                    React.createElement(Text, { style: styles.timeText }, session.time)
+                  ),
+                  React.createElement(Text, { style: styles.durationText }, `${session.duration} minutes`),
+                  React.createElement(Text, { style: styles.repeatText },
+                    session.repeat === 'daily' ? 'Daily' : 
+                    session.repeat === 'weekdays' ? 'Weekdays' : 'Once'
+                  )
+                ),
                 
-                <View style={styles.sessionActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.toggleButton,
-                      session.enabled ? styles.enabledButton : styles.disabledButton
-                    ]}
-                    onPress={() => toggleSession(session.id)}
-                  >
-                    <Text style={[
-                      styles.toggleText,
-                      session.enabled ? styles.enabledText : styles.disabledText
-                    ]}>
-                      {session.enabled ? 'ON' : 'OFF'}
-                    </Text>
-                  </TouchableOpacity>
+                React.createElement(View, { style: styles.sessionActions },
+                  React.createElement(TouchableOpacity,
+                    { 
+                      style: [
+                        styles.toggleButton,
+                        session.enabled ? styles.enabledButton : styles.disabledButton
+                      ],
+                      onPress: () => toggleSession(session.id)
+                    },
+                    React.createElement(Text, { 
+                      style: [
+                        styles.toggleText,
+                        session.enabled ? styles.enabledText : styles.disabledText
+                      ]
+                    }, session.enabled ? 'ON' : 'OFF')
+                  ),
                   
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => deleteSession(session.id)}
-                  >
-                    <Trash2 size={16} color={Colors.common.error} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </LinearGradient>
+                  React.createElement(TouchableOpacity,
+                    {
+                      style: styles.deleteButton,
+                      onPress: () => deleteSession(session.id)
+                    },
+                    React.createElement(Trash2, { size: 16, color: Colors.common.error })
+                  )
+                )
+              )
+            )
+          )
+    )
   );
 }
 
@@ -131,50 +132,49 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.personal.text,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.personal.accent,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: 20,
+    gap: 6,
   },
   addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
     color: Colors.personal.background,
+    fontWeight: '600',
+    fontSize: 14,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 64,
+    paddingVertical: 60,
+    gap: 16,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '600',
     color: Colors.personal.text,
     marginTop: 16,
-    marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
     color: Colors.personal.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
   },
   sessionsList: {
     gap: 16,
@@ -183,30 +183,29 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.personal.surface,
     borderRadius: 12,
     padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.personal.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.personal.border,
   },
   sessionInfo: {
     flex: 1,
+    gap: 8,
   },
   sessionTime: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 6,
   },
   timeText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.personal.text,
   },
   durationText: {
     fontSize: 14,
-    color: Colors.personal.textSecondary,
-    marginBottom: 2,
+    color: Colors.personal.text,
   },
   repeatText: {
     fontSize: 12,
@@ -218,11 +217,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   toggleButton: {
-    paddingVertical: 4,
     paddingHorizontal: 12,
-    borderRadius: 6,
-    minWidth: 40,
-    alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   enabledButton: {
     backgroundColor: Colors.personal.accent,
@@ -235,12 +232,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   enabledText: {
-    color: Colors.personal.background,
+    color: Colors.common.white,
   },
   disabledText: {
     color: Colors.personal.textSecondary,
   },
   deleteButton: {
-    padding: 4,
+    padding: 8,
   },
 });

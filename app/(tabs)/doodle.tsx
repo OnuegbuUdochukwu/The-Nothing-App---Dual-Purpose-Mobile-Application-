@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Trash2, RotateCcw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -37,71 +38,71 @@ export default function DoodleScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.toolbar}>
-        <Text style={styles.title}>Adult Doodle</Text>
-        
-        <View style={styles.controls}>
-          <View style={styles.colorPalette}>
-            {colors.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorButton,
-                  { backgroundColor: color },
-                  currentColor === color && styles.selectedColor
-                ]}
-                onPress={() => {
-                  setCurrentColor(color);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              />
-            ))}
-          </View>
+  return React.createElement(
+    SafeAreaView, 
+    { style: styles.container },
+    React.createElement(View, { style: styles.toolbar },
+      React.createElement(Text, { style: styles.title }, "Adult Doodle"),
+      
+      React.createElement(View, { style: styles.controls },
+        React.createElement(View, { style: styles.colorPalette },
+          colors.map((color) => 
+            React.createElement(TouchableOpacity, {
+              key: color,
+              style: [
+                styles.colorButton,
+                { backgroundColor: color },
+                currentColor === color && styles.selectedColor
+              ],
+              onPress: () => {
+                setCurrentColor(color);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            })
+          )
+        ),
 
-          <View style={styles.widthControls}>
-            {strokeWidths.map((width) => (
-              <TouchableOpacity
-                key={width}
-                style={[
-                  styles.widthButton,
-                  strokeWidth === width && styles.selectedWidth
-                ]}
-                onPress={() => {
-                  setStrokeWidth(width);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <View 
-                  style={[
-                    styles.widthIndicator,
-                    { width: width * 2, height: width * 2, backgroundColor: currentColor }
-                  ]} 
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
+        React.createElement(View, { style: styles.widthControls },
+          strokeWidths.map((width) => 
+            React.createElement(TouchableOpacity, {
+              key: width,
+              style: [
+                styles.widthButton,
+                strokeWidth === width && styles.selectedWidth
+              ],
+              onPress: () => {
+                setStrokeWidth(width);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }, 
+              React.createElement(View, {
+                style: [
+                  styles.widthIndicator,
+                  { width: width * 2, height: width * 2, backgroundColor: currentColor }
+                ]
+              })
+            )
+          )
+        ),
 
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionButton} onPress={undo}>
-              <RotateCcw size={20} color={Colors.personal.text} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={clearCanvas}>
-              <Trash2 size={20} color={Colors.personal.text} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        React.createElement(View, { style: styles.actions },
+          React.createElement(TouchableOpacity, { style: styles.actionButton, onPress: undo },
+            React.createElement(RotateCcw, { size: 20, color: Colors.personal.text })
+          ),
+          React.createElement(TouchableOpacity, { style: styles.actionButton, onPress: clearCanvas },
+            React.createElement(Trash2, { size: 20, color: Colors.personal.text })
+          )
+        )
+      ),
 
-      <DrawingCanvas
-        strokes={strokes}
-        currentColor={currentColor}
-        strokeWidth={strokeWidth}
-        onStrokeComplete={handleStrokeComplete}
-        backgroundColor={Colors.personal.background}
-      />
-    </SafeAreaView>
+      React.createElement(DrawingCanvas, {
+        strokes: strokes,
+        currentColor: currentColor,
+        strokeWidth: strokeWidth,
+        onStrokeComplete: handleStrokeComplete,
+        backgroundColor: Colors.personal.background
+      })
+    )
   );
 }
 

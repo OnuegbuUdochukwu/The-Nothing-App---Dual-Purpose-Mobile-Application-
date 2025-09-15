@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
 import { Trash2, Palette } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';

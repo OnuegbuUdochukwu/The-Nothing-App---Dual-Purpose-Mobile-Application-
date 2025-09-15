@@ -1,7 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { View, PanGestureHandler, State } from 'react-native-gesture-handler';
+import * as React from 'react';
+import { useRef, useState } from 'react';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Svg, Path } from 'react-native-svg';
-import { Dimensions, StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import { DoodleStroke } from '@/types';
 
 const { width, height } = Dimensions.get('window');
