@@ -1,12 +1,35 @@
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, TextInput, Dimensions, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  TextInput,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Play, Pause, Square, ChevronUp, BellOff, BarChart, Clock, Calendar } from 'lucide-react-native';
+import {
+  Play,
+  Pause,
+  Square,
+  ChevronUp,
+  BellOff,
+  BarChart,
+  Clock,
+  Calendar,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { Colors } from '@/constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import {
+  PanGestureHandlerGestureEvent,
+  PanGestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { useSubscription } from '@/hooks/useSubscription';
 import PremiumModal from '@/components/PremiumModal';
 
@@ -16,6 +39,8 @@ const { height } = Dimensions.get('window');
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -32,27 +57,37 @@ export default function FocusScreen() {
   const [notificationsSilenced, setNotificationsSilenced] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [sessionHistory, setSessionHistory] = useState<{date: string, duration: number, completed: boolean}[]>([]);
-  
+  const [sessionHistory, setSessionHistory] = useState<
+    { date: string; duration: number; completed: boolean }[]
+  >([]);
+
   const { isPremium } = useSubscription();
-  
-  // Default PIN - in a real app, this would be user-set and securely stored
-  const DEFAULT_PIN = '1234';
+
+  const [parentalPin, setParentalPin] = useState('1234');
+  useEffect(() => {
+    (async () => {
+      const storedPin = await AsyncStorage.getItem('parentalPin');
+      if (storedPin) setParentalPin(storedPin);
+    })();
+  }, []);
 
   const durations = [5, 15, 30, 60];
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(time => {
+        setTimeLeft((time) => {
           if (time <= 1) {
             setIsActive(false);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             restoreNotifications();
             saveSessionToHistory(true); // Session was completed successfully
-            Alert.alert('Session Complete', 'Well done! You completed your focus session. Notifications have been restored.');
+            Alert.alert(
+              'Session Complete',
+              'Well done! You completed your focus session. Notifications have been restored.'
+            );
             return 0;
           }
           return time - 1;
@@ -77,6 +112,8 @@ export default function FocusScreen() {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: false,
+        shouldShowBanner: false,
+        shouldShowList: false,
         shouldPlaySound: false,
         shouldSetBadge: false,
       }),
@@ -90,6 +127,8 @@ export default function FocusScreen() {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
       }),
@@ -102,17 +141,20 @@ export default function FocusScreen() {
     setIsActive(true);
     await silenceNotifications();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert('Focus Mode Activated', 'Notifications have been silenced for this session.');
+    Alert.alert(
+      'Focus Mode Activated',
+      'Notifications have been silenced for this session.'
+    );
   };
-  
+
   const saveSessionToHistory = (completed: boolean) => {
     const newSession = {
       date: new Date().toISOString(),
       duration: selectedDuration,
-      completed
+      completed,
     };
-    
-    setSessionHistory(prev => [newSession, ...prev].slice(0, 10)); // Keep last 10 sessions
+
+    setSessionHistory((prev) => [newSession, ...prev].slice(0, 10)); // Keep last 10 sessions
   };
 
   const stopSession = async () => {
@@ -126,9 +168,9 @@ export default function FocusScreen() {
     await restoreNotifications();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
-  
+
   const handlePinSubmit = () => {
-    if (pin === DEFAULT_PIN) {
+    if (pin === parentalPin) {
       stopSession();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
@@ -137,30 +179,30 @@ export default function FocusScreen() {
       Alert.alert('Incorrect PIN', 'Please try again.');
     }
   };
-  
-  const handleGestureEvent = (event) => {
+
+  const handleGestureEvent = (event: PanGestureHandlerGestureEvent) => {
     if (!isSwipeActive) return;
-    
+
     const { translationY } = event.nativeEvent;
     // Limit swipe to upward motion only and cap at -100
     const newPosition = Math.max(-100, Math.min(0, -translationY));
     setSwipePosition(newPosition);
   };
-  
-  const handleStateChange = (event) => {
+
+  const handleStateChange = (event: PanGestureHandlerStateChangeEvent) => {
     const { state } = event.nativeEvent;
-    
+
     if (state === State.BEGAN) {
       setIsSwipeActive(true);
     } else if (state === State.END || state === State.CANCELLED) {
       setIsSwipeActive(false);
-      
+
       // If swiped up enough, show PIN dialog
       if (swipePosition <= -80) {
         setShowPinDialog(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
-      
+
       // Reset swipe position
       setSwipePosition(0);
     }
@@ -169,7 +211,9 @@ export default function FocusScreen() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}`;
   };
 
   if (isActive) {
@@ -195,13 +239,13 @@ export default function FocusScreen() {
               placeholder="Enter 4-digit PIN"
               placeholderTextColor={Colors.personal.textSecondary}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.pinButton}
               onPress={handlePinSubmit}
             >
               <Text style={styles.pinButtonText}>Submit</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => {
                 setShowPinDialog(false);
@@ -218,7 +262,12 @@ export default function FocusScreen() {
           >
             <View style={styles.timeDisplay}>
               <Text style={styles.timeText}>{formatTime(timeLeft)}</Text>
-              <View style={[styles.swipeIndicator, { transform: [{ translateY: swipePosition }] }]}>
+              <View
+                style={[
+                  styles.swipeIndicator,
+                  { transform: [{ translateY: swipePosition }] },
+                ]}
+              >
                 <ChevronUp size={24} color={Colors.personal.accent} />
                 <Text style={styles.escapeHint}>Swipe up to unlock</Text>
               </View>
@@ -236,15 +285,15 @@ export default function FocusScreen() {
       setShowPremiumModal(true);
     }
   };
-  
+
   const renderInsights = () => {
     if (!showInsights) return null;
-    
-    const completedSessions = sessionHistory.filter(s => s.completed).length;
+
+    const completedSessions = sessionHistory.filter((s) => s.completed).length;
     const totalMinutes = sessionHistory.reduce((acc, session) => {
       return session.completed ? acc + session.duration : acc;
     }, 0);
-    
+
     return (
       <View style={styles.insightsOverlay}>
         <View style={styles.insightsContainer}>
@@ -254,7 +303,7 @@ export default function FocusScreen() {
               <Text style={styles.closeButton}>×</Text>
             </TouchableOpacity>
           </View>
-          
+
           <ScrollView style={styles.insightsContent}>
             <View style={styles.insightCard}>
               <View style={styles.insightIconContainer}>
@@ -265,17 +314,19 @@ export default function FocusScreen() {
                 <Text style={styles.insightValue}>{totalMinutes} minutes</Text>
               </View>
             </View>
-            
+
             <View style={styles.insightCard}>
               <View style={styles.insightIconContainer}>
                 <Calendar size={24} color={Colors.personal.accent} />
               </View>
               <View>
                 <Text style={styles.insightLabel}>Sessions Completed</Text>
-                <Text style={styles.insightValue}>{completedSessions} of {sessionHistory.length}</Text>
+                <Text style={styles.insightValue}>
+                  {completedSessions} of {sessionHistory.length}
+                </Text>
               </View>
             </View>
-            
+
             <View style={styles.insightCard}>
               <View style={styles.insightIconContainer}>
                 <BarChart size={24} color={Colors.personal.accent} />
@@ -283,25 +334,42 @@ export default function FocusScreen() {
               <View>
                 <Text style={styles.insightLabel}>Completion Rate</Text>
                 <Text style={styles.insightValue}>
-                  {sessionHistory.length > 0 
-                    ? Math.round((completedSessions / sessionHistory.length) * 100) + '%'
+                  {sessionHistory.length > 0
+                    ? Math.round(
+                        (completedSessions / sessionHistory.length) * 100
+                      ) + '%'
                     : 'N/A'}
                 </Text>
               </View>
             </View>
-            
+
             <Text style={styles.sessionHistoryTitle}>Recent Sessions</Text>
             {sessionHistory.length > 0 ? (
               sessionHistory.map((session, index) => {
                 const date = new Date(session.date);
-                const formattedDate = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-                
+                const formattedDate = `${date.toLocaleDateString()} at ${date.toLocaleTimeString(
+                  [],
+                  { hour: '2-digit', minute: '2-digit' }
+                )}`;
+
                 return (
                   <View key={index} style={styles.sessionItem}>
-                    <View style={[styles.sessionStatus, {backgroundColor: session.completed ? Colors.common.success : Colors.common.error}]} />
+                    <View
+                      style={[
+                        styles.sessionStatus,
+                        {
+                          backgroundColor: session.completed
+                            ? Colors.common.success
+                            : Colors.common.error,
+                        },
+                      ]}
+                    />
                     <View>
                       <Text style={styles.sessionDate}>{formattedDate}</Text>
-                      <Text style={styles.sessionDuration}>{session.duration} min {session.completed ? 'completed' : 'interrupted'}</Text>
+                      <Text style={styles.sessionDuration}>
+                        {session.duration} min{' '}
+                        {session.completed ? 'completed' : 'interrupted'}
+                      </Text>
                     </View>
                   </View>
                 );
@@ -314,58 +382,75 @@ export default function FocusScreen() {
       </View>
     );
   };
-  
+
   return (
     <LinearGradient
       colors={[Colors.personal.background, Colors.personal.surface]}
       style={styles.container}
     >
       {renderInsights()}
-      <PremiumModal 
-        visible={showPremiumModal} 
+      <PremiumModal
+        visible={showPremiumModal}
         onClose={() => setShowPremiumModal(false)}
         featureName="Focus Insights & Analytics"
       />
       <View style={styles.content}>
         <View style={styles.headerTop}>
           <Text style={styles.title}>Focus Mode</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.insightsButton}
             onPress={handleInsightsPress}
           >
-            <BarChart size={20} color={isPremium ? Colors.personal.accent : Colors.personal.textSecondary} />
-            <Text style={[styles.insightsButtonText, {color: isPremium ? Colors.personal.accent : Colors.personal.textSecondary}]}>Insights</Text>
+            <BarChart
+              size={20}
+              color={
+                isPremium
+                  ? Colors.personal.accent
+                  : Colors.personal.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.insightsButtonText,
+                {
+                  color: isPremium
+                    ? Colors.personal.accent
+                    : Colors.personal.textSecondary,
+                },
+              ]}
+            >
+              Insights
+            </Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>Choose your focus duration</Text>
-        
+
         <View style={styles.durationContainer}>
           {durations.map((duration) => (
             <TouchableOpacity
               key={duration}
               style={[
                 styles.durationButton,
-                selectedDuration === duration && styles.selectedDuration
+                selectedDuration === duration && styles.selectedDuration,
               ]}
               onPress={() => {
                 setSelectedDuration(duration);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <Text style={[
-                styles.durationText,
-                selectedDuration === duration && styles.selectedDurationText
-              ]}>
+              <Text
+                style={[
+                  styles.durationText,
+                  selectedDuration === duration && styles.selectedDurationText,
+                ]}
+              >
                 {duration}m
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <TouchableOpacity 
-          style={styles.startButton}
-          onPress={startSession}
-        >
+        <TouchableOpacity style={styles.startButton} onPress={startSession}>
           <Play size={24} color={Colors.personal.background} />
           <Text style={styles.startButtonText}>Start Session</Text>
         </TouchableOpacity>
