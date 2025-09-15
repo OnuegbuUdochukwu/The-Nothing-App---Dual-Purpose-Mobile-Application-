@@ -1,11 +1,28 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Dimensions, Platform, TextInput, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Dimensions,
+  Platform,
+  TextInput,
+  ScrollView,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Lock, Clock as Unlock, Timer, Music, BarChart2 } from 'lucide-react-native';
+import {
+  Lock,
+  Clock as Unlock,
+  Timer,
+  Music,
+  BarChart2,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Colors } from '@/constants/Colors';
+import * as Notifications from 'expo-notifications';
 import { useSubscription } from '@/hooks/useSubscription';
 import CalmingSounds from '@/components/CalmingSounds';
 import PremiumModal from '@/components/PremiumModal';
@@ -15,6 +32,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const { width, height } = Dimensions.get('window');
 
 export default function BabyLockScreen() {
+  // ...state declarations and other hooks...
+
+  // ...state declarations and other hooks...
+
+  // Place useEffect after state declarations
   const [isLocked, setIsLocked] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState(10); // minutes
@@ -27,32 +49,53 @@ export default function BabyLockScreen() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
-  
+
   const { isPremium } = useSubscription();
 
   const durations = [5, 10, 15, 20];
 
+  // Notification silencing logic (must be after state declarations)
+  const silenceNotifications = async () => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: false,
+        shouldShowBanner: false,
+        shouldShowList: false,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  };
+
+  const restoreNotifications = async () => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  };
+
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isLocked && timeLeft > 0) {
-      // Disable navigation buttons when Baby Lock is active (Android only)
       if (Platform.OS === 'android') {
         NavigationBar.setVisibilityAsync('hidden');
       }
-      
+      silenceNotifications();
       interval = setInterval(() => {
-        setTimeLeft(time => {
+        setTimeLeft((time) => {
           if (time <= 1) {
             setIsLocked(false);
-            // Save session history when session ends automatically
             saveSessionHistory();
             setSessionStartTime(null);
-            
-            // Restore navigation buttons when session ends (Android only)
             if (Platform.OS === 'android') {
               NavigationBar.setVisibilityAsync('visible');
             }
+            restoreNotifications();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             Alert.alert('Baby Time Complete', 'Baby mode session has ended.');
             return 0;
@@ -62,18 +105,17 @@ export default function BabyLockScreen() {
       }, 1000);
     } else if (interval) {
       clearInterval(interval);
-      // Ensure navigation buttons are restored when timer is cleared
       if (Platform.OS === 'android') {
         NavigationBar.setVisibilityAsync('visible');
       }
+      restoreNotifications();
     }
-
     return () => {
       if (interval) clearInterval(interval);
-      // Ensure navigation buttons are restored when component unmounts
       if (Platform.OS === 'android') {
         NavigationBar.setVisibilityAsync('visible');
       }
+      restoreNotifications();
     };
   }, [isLocked, timeLeft]);
 
@@ -82,38 +124,38 @@ export default function BabyLockScreen() {
     setIsLocked(true);
     setUnlockAttempts(0);
     setSessionStartTime(new Date());
-    
     // Disable navigation buttons when Baby Lock starts (Android only)
     if (Platform.OS === 'android') {
       NavigationBar.setVisibilityAsync('hidden');
     }
-    
+    // Silence notifications when Baby Lock starts
+    silenceNotifications();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   };
-  
+
   const saveSessionHistory = async () => {
     if (!sessionStartTime) return;
-    
+
     try {
       // Calculate session duration in minutes
       const endTime = new Date();
       const durationMs = endTime.getTime() - sessionStartTime.getTime();
       const durationMinutes = Math.round(durationMs / (1000 * 60));
-      
+
       // Create session record
       const sessionData = {
         date: sessionStartTime.toISOString(),
         duration: durationMinutes,
-        mode: 'baby'
+        mode: 'baby',
       };
-      
+
       // Get existing history
       const existingData = await AsyncStorage.getItem('babySessionHistory');
       let history = existingData ? JSON.parse(existingData) : [];
-      
+
       // Add new session to history
       history = [sessionData, ...history];
-      
+
       // Save updated history
       await AsyncStorage.setItem('babySessionHistory', JSON.stringify(history));
     } catch (error) {
@@ -122,22 +164,23 @@ export default function BabyLockScreen() {
   };
 
   const handleUnlockAttempt = () => {
-    setUnlockAttempts(prev => prev + 1);
-    
-    if (unlockAttempts >= 2) { // Three taps total
+    setUnlockAttempts((prev) => prev + 1);
+
+    if (unlockAttempts >= 2) {
+      // Three taps total
       setShowPinInput(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   };
-  
+
   const handlePinSubmit = async () => {
     if (pin === parentalPin) {
       // PIN is correct
       // Save session history before unlocking
       await saveSessionHistory();
-      
+
       setIsLocked(false);
       setTimeLeft(0);
       setUnlockAttempts(0);
@@ -145,12 +188,13 @@ export default function BabyLockScreen() {
       setPin('');
       setPinError('');
       setSessionStartTime(null);
-      
+
       // Restore navigation buttons when unlocked (Android only)
       if (Platform.OS === 'android') {
         NavigationBar.setVisibilityAsync('visible');
       }
-      
+      // Restore notifications when unlocked
+      restoreNotifications();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } else {
       // PIN is incorrect
@@ -159,7 +203,7 @@ export default function BabyLockScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
   };
-  
+
   const handleDashboardPress = () => {
     if (isPremium) {
       setShowDashboard(true);
@@ -167,7 +211,7 @@ export default function BabyLockScreen() {
       setShowPremiumModal(true);
     }
   };
-  
+
   const handlePinCancel = () => {
     setShowPinInput(false);
     setPin('');
@@ -178,7 +222,9 @@ export default function BabyLockScreen() {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}`;
   };
 
   if (isLocked) {
@@ -186,94 +232,122 @@ export default function BabyLockScreen() {
       LinearGradient,
       {
         colors: [Colors.baby.yellow, Colors.baby.blue],
-        style: styles.lockedContainer
+        style: styles.lockedContainer,
       },
-      showPinInput ? 
-        React.createElement(
-          View, 
-          { style: styles.pinContainer },
-          React.createElement(Text, { style: styles.pinTitle }, "Parent Unlock"),
-          React.createElement(Text, { style: styles.pinSubtitle }, "Enter PIN to exit Baby Mode"),
-          
-          React.createElement(TextInput, {
-            style: styles.pinInput,
-            value: pin,
-            onChangeText: setPin,
-            keyboardType: "number-pad",
-            secureTextEntry: true,
-            maxLength: 4,
-            placeholder: "Enter 4-digit PIN",
-            placeholderTextColor: Colors.common.white + '80',
-            autoFocus: true
-          }),
-          
-          pinError ? React.createElement(Text, { style: styles.pinError }, pinError) : null,
-          
-          React.createElement(
-            View, 
-            { style: styles.pinButtonsContainer },
+      showPinInput
+        ? React.createElement(
+            View,
+            { style: styles.pinContainer },
             React.createElement(
-              TouchableOpacity, 
-              {
-                style: [styles.pinButton, styles.pinCancelButton],
-                onPress: handlePinCancel
-              },
-              React.createElement(Text, { style: styles.pinButtonText }, "Cancel")
+              Text,
+              { style: styles.pinTitle },
+              'Parent Unlock'
             ),
-            
             React.createElement(
-              TouchableOpacity, 
-              {
-                style: [styles.pinButton, styles.pinSubmitButton],
-                onPress: handlePinSubmit,
-                disabled: pin.length !== 4
-              },
-              React.createElement(Text, { style: styles.pinButtonText }, "Unlock")
+              Text,
+              { style: styles.pinSubtitle },
+              'Enter PIN to exit Baby Mode'
+            ),
+            React.createElement(TextInput, {
+              style: styles.pinInput,
+              value: pin,
+              onChangeText: setPin,
+              keyboardType: 'number-pad',
+              secureTextEntry: true,
+              maxLength: 4,
+              placeholder: 'Enter 4-digit PIN',
+              placeholderTextColor: Colors.common.white + '80',
+              autoFocus: true,
+            }),
+            pinError
+              ? React.createElement(Text, { style: styles.pinError }, pinError)
+              : null,
+            React.createElement(
+              View,
+              { style: styles.pinButtonsContainer },
+              React.createElement(
+                TouchableOpacity,
+                {
+                  style: [styles.pinButton, styles.pinCancelButton],
+                  onPress: handlePinCancel,
+                },
+                React.createElement(
+                  Text,
+                  { style: styles.pinButtonText },
+                  'Cancel'
+                )
+              ),
+              React.createElement(
+                TouchableOpacity,
+                {
+                  style: [styles.pinButton, styles.pinSubmitButton],
+                  onPress: handlePinSubmit,
+                  disabled: pin.length !== 4,
+                },
+                React.createElement(
+                  Text,
+                  { style: styles.pinButtonText },
+                  'Unlock'
+                )
+              )
             )
           )
-        ) : 
-        React.createElement(
-          TouchableOpacity,
-          {
-            style: styles.lockedContent,
-            onPress: handleUnlockAttempt,
-            activeOpacity: 1
-          },
-          React.createElement(
-            View, 
-            { style: styles.lockIcon },
-            React.createElement(Lock, { size: 48, color: Colors.common.white })
-          ),
-          React.createElement(Text, { style: styles.lockedTitle }, "Baby Mode Active"),
-          React.createElement(Text, { style: styles.timeDisplay }, formatTime(timeLeft)),
-          React.createElement(
-            Text, 
-            { style: styles.unlockHint },
-            unlockAttempts === 0 ? "Tap 3 times in corner to unlock" :
-            unlockAttempts === 1 ? "Tap 2 more times..." :
-            unlockAttempts === 2 ? "Tap 1 more time..." : ""
+        : React.createElement(
+            TouchableOpacity,
+            {
+              style: styles.lockedContent,
+              onPress: handleUnlockAttempt,
+              activeOpacity: 1,
+            },
+            React.createElement(
+              View,
+              { style: styles.lockIcon },
+              React.createElement(Lock, {
+                size: 48,
+                color: Colors.common.white,
+              })
+            ),
+            React.createElement(
+              Text,
+              { style: styles.lockedTitle },
+              'Baby Mode Active'
+            ),
+            React.createElement(
+              Text,
+              { style: styles.timeDisplay },
+              formatTime(timeLeft)
+            ),
+            React.createElement(
+              Text,
+              { style: styles.unlockHint },
+              unlockAttempts === 0
+                ? 'Tap 3 times in corner to unlock'
+                : unlockAttempts === 1
+                ? 'Tap 2 more times...'
+                : unlockAttempts === 2
+                ? 'Tap 1 more time...'
+                : ''
+            )
           )
-        )
     );
   }
-  
 
   const [showSetPin, setShowSetPin] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [pinSetError, setPinSetError] = useState('');
-  
+
   const handleSetPin = () => {
     if (newPin.length !== 4) {
       setPinSetError('PIN must be 4 digits');
       return;
     }
-    
+
     if (newPin !== confirmPin) {
       setPinSetError('PINs do not match');
       return;
     }
-    
+
     setParentalPin(newPin);
     setShowSetPin(false);
     setNewPin('');
@@ -282,79 +356,7 @@ export default function BabyLockScreen() {
     Alert.alert('Success', 'Parental PIN has been set successfully.');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
-  
-  if (showSetPin) {
-    return React.createElement(
-      LinearGradient,
-      {
-        colors: [Colors.common.white, Colors.baby.surface],
-        style: styles.container
-      },
-      React.createElement(
-        View, 
-        { style: styles.content },
-        React.createElement(
-          View, 
-          { style: styles.header },
-          React.createElement(Lock, { size: 48, color: Colors.baby.blue }),
-          React.createElement(Text, { style: styles.title }, "Set Parental PIN"),
-          React.createElement(Text, { style: styles.subtitle }, "Create a 4-digit PIN for parental unlock")
-        ),
-        
-        React.createElement(
-          View, 
-          { style: styles.pinSetContainer },
-          React.createElement(TextInput, {
-            style: styles.pinSetInput,
-            value: newPin,
-            onChangeText: setNewPin,
-            keyboardType: "number-pad",
-            secureTextEntry: true,
-            maxLength: 4,
-            placeholder: "Enter 4-digit PIN",
-            placeholderTextColor: Colors.baby.textSecondary
-          }),
-          
-          React.createElement(TextInput, {
-            style: styles.pinSetInput,
-            value: confirmPin,
-            onChangeText: setConfirmPin,
-            keyboardType: "number-pad",
-            secureTextEntry: true,
-            maxLength: 4,
-            placeholder: "Confirm PIN",
-            placeholderTextColor: Colors.baby.textSecondary
-          }),
-          
-          pinSetError ? React.createElement(Text, { style: styles.pinSetError }, pinSetError) : null,
-          
-          React.createElement(
-            View, 
-            { style: styles.pinButtonsContainer },
-            React.createElement(
-              TouchableOpacity, 
-              {
-                style: [styles.pinButton, styles.pinCancelButton],
-                onPress: () => setShowSetPin(false)
-              },
-              React.createElement(Text, { style: styles.pinButtonText }, "Cancel")
-            ),
-            
-            React.createElement(
-              TouchableOpacity, 
-              {
-                style: [styles.pinButton, styles.pinSubmitButton],
-                onPress: handleSetPin,
-                disabled: newPin.length !== 4 || confirmPin.length !== 4
-              },
-              React.createElement(Text, { style: styles.pinButtonText }, "Save PIN")
-            )
-          )
-        )
-      )
-    );
-  }
-  
+
   const handleSoundsPress = () => {
     if (isPremium) {
       setShowSounds(!showSounds);
@@ -362,105 +364,190 @@ export default function BabyLockScreen() {
       setShowPremiumModal(true);
     }
   };
-  
+
   return React.createElement(
     LinearGradient,
     {
       colors: [Colors.common.white, Colors.baby.surface],
-      style: styles.container
+      style: styles.container,
     },
     React.createElement(PremiumModal, {
       visible: showPremiumModal,
       onClose: () => setShowPremiumModal(false),
-      featureName: showDashboard ? "Parental Dashboard" : "Calming Sounds for Baby Mode"
+      featureName: showDashboard
+        ? 'Parental Dashboard'
+        : 'Calming Sounds for Baby Mode',
     }),
-    
+
     React.createElement(ParentalDashboard, {
       visible: showDashboard,
-      onClose: () => setShowDashboard(false)
+      onClose: () => setShowDashboard(false),
     }),
-    React.createElement(View, { style: styles.content },
-      React.createElement(View, { style: styles.header },
-        React.createElement(View, { style: styles.headerLeft },
+    React.createElement(
+      View,
+      { style: styles.content },
+      React.createElement(
+        View,
+        { style: styles.header },
+        React.createElement(
+          View,
+          { style: styles.headerLeft },
           React.createElement(Lock, { size: 48, color: Colors.baby.blue }),
-          React.createElement(View, { style: styles.headerText },
-            React.createElement(Text, { style: styles.title }, "Baby Lock"),
-            React.createElement(Text, { style: styles.subtitle }, "Safe digital space for little ones")
+          React.createElement(
+            View,
+            { style: styles.headerText },
+            React.createElement(Text, { style: styles.title }, 'Baby Lock'),
+            React.createElement(
+              Text,
+              { style: styles.subtitle },
+              'Safe digital space for little ones'
+            )
           )
         ),
-        React.createElement(View, { style: styles.headerButtons },
-          React.createElement(TouchableOpacity, {
-            style: styles.headerButton,
-            onPress: handleDashboardPress
-          },
-            React.createElement(BarChart2, { size: 20, color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary }),
-            React.createElement(Text, { style: [styles.buttonText, {color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary}] }, "Dashboard")
+        React.createElement(
+          View,
+          { style: styles.headerButtons },
+          React.createElement(
+            TouchableOpacity,
+            {
+              style: styles.headerButton,
+              onPress: handleDashboardPress,
+            },
+            React.createElement(BarChart2, {
+              size: 20,
+              color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary,
+            }),
+            React.createElement(
+              Text,
+              {
+                style: [
+                  styles.buttonText,
+                  {
+                    color: isPremium
+                      ? Colors.baby.blue
+                      : Colors.baby.textSecondary,
+                  },
+                ],
+              },
+              'Dashboard'
+            )
           ),
-          
-          React.createElement(TouchableOpacity, {
-            style: styles.headerButton,
-            onPress: handleSoundsPress
-          },
-            React.createElement(Music, { size: 20, color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary }),
-            React.createElement(Text, { style: [styles.buttonText, {color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary}] }, "Sounds")
+
+          React.createElement(
+            TouchableOpacity,
+            {
+              style: styles.headerButton,
+              onPress: handleSoundsPress,
+            },
+            React.createElement(Music, {
+              size: 20,
+              color: isPremium ? Colors.baby.blue : Colors.baby.textSecondary,
+            }),
+            React.createElement(
+              Text,
+              {
+                style: [
+                  styles.buttonText,
+                  {
+                    color: isPremium
+                      ? Colors.baby.blue
+                      : Colors.baby.textSecondary,
+                  },
+                ],
+              },
+              'Sounds'
+            )
           )
         )
       ),
-        
-        showSounds && isPremium ? React.createElement(CalmingSounds, null) : null,
-        
-        React.createElement(View, { style: styles.durationSection },
-          React.createElement(Text, { style: styles.sectionTitle }, "Session Duration"),
-          React.createElement(View, { style: styles.durationContainer },
-            durations.map((duration) => 
-              React.createElement(TouchableOpacity, {
+
+      showSounds && isPremium ? React.createElement(CalmingSounds, null) : null,
+
+      React.createElement(
+        View,
+        { style: styles.durationSection },
+        React.createElement(
+          Text,
+          { style: styles.sectionTitle },
+          'Session Duration'
+        ),
+        React.createElement(
+          View,
+          { style: styles.durationContainer },
+          durations.map((duration) =>
+            React.createElement(
+              TouchableOpacity,
+              {
                 key: duration,
                 style: [
                   styles.durationButton,
-                  selectedDuration === duration && styles.selectedDuration
+                  selectedDuration === duration && styles.selectedDuration,
                 ],
                 onPress: () => {
                   setSelectedDuration(duration);
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
+                },
               },
-                React.createElement(Timer, { 
-                  size: 20, 
-                  color: selectedDuration === duration ? Colors.common.white : Colors.baby.blue 
-                }),
-                React.createElement(Text, { 
+              React.createElement(Timer, {
+                size: 20,
+                color:
+                  selectedDuration === duration
+                    ? Colors.common.white
+                    : Colors.baby.blue,
+              }),
+              React.createElement(
+                Text,
+                {
                   style: [
                     styles.durationText,
-                    selectedDuration === duration && styles.selectedDurationText
-                  ] 
-                }, duration + "m")
+                    selectedDuration === duration &&
+                      styles.selectedDurationText,
+                  ],
+                },
+                duration + 'm'
               )
             )
           )
-        ),
+        )
+      ),
 
-        React.createElement(View, { style: styles.warningSection },
-          React.createElement(Text, { style: styles.warningTitle }, "Important:"),
-          React.createElement(Text, { style: styles.warningText },
-            "• Baby Mode will lock your phone for the selected duration\n" +
-            "• Tap the corner 3 times to unlock early\n" +
-            "• Your phone will be safe from accidental calls or app switches"
-          )
-        ),
+      React.createElement(
+        View,
+        { style: styles.warningSection },
+        React.createElement(Text, { style: styles.warningTitle }, 'Important:'),
+        React.createElement(
+          Text,
+          { style: styles.warningText },
+          '• Baby Mode will lock your phone for the selected duration\n' +
+            '• Tap the corner 3 times to unlock early\n' +
+            '• Your phone will be safe from accidental calls or app switches'
+        )
+      ),
 
-        React.createElement(TouchableOpacity, { 
+      React.createElement(
+        TouchableOpacity,
+        {
           style: styles.startButton,
-          onPress: () => startBabyMode()
+          onPress: () => startBabyMode(),
         },
-          React.createElement(Lock, { size: 24, color: Colors.common.white }),
-          React.createElement(Text, { style: styles.startButtonText }, "Start Baby Mode")
-        ),
-        
-        React.createElement(TouchableOpacity, { 
+        React.createElement(Lock, { size: 24, color: Colors.common.white }),
+        React.createElement(
+          Text,
+          { style: styles.startButtonText },
+          'Start Baby Mode'
+        )
+      ),
+
+      React.createElement(
+        TouchableOpacity,
+        {
           style: styles.setPinButton,
-          onPress: () => setShowSetPin(true)
+          onPress: () => setShowSetPin(true),
         },
-          React.createElement(Text, { style: styles.setPinButtonText }, "Set Parental PIN")
+        React.createElement(
+          Text,
+          { style: styles.setPinButtonText },
+          'Set Parental PIN'
         )
       )
     )
