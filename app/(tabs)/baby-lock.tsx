@@ -45,7 +45,14 @@ export default function BabyLockScreen() {
   const [unlockAttempts, setUnlockAttempts] = useState(0);
   const [showPinInput, setShowPinInput] = useState(false);
   const [pin, setPin] = useState('');
-  const [parentalPin, setParentalPin] = useState('1234'); // Default PIN
+  const [parentalPin, setParentalPin] = useState('');
+  // Load parental PIN from AsyncStorage on mount
+  useEffect(() => {
+    (async () => {
+      const storedPin = await AsyncStorage.getItem('parentalPin');
+      setParentalPin(storedPin || '1234');
+    })();
+  }, []);
   const [pinError, setPinError] = useState('');
   const [showSounds, setShowSounds] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
@@ -364,13 +371,16 @@ export default function BabyLockScreen() {
       setPinSetError('PIN must be 4 digits');
       return;
     }
-
+    if (newPin === '1234') {
+      setPinSetError('Cannot use default PIN (1234).');
+      return;
+    }
     if (newPin !== confirmPin) {
       setPinSetError('PINs do not match');
       return;
     }
-
     setParentalPin(newPin);
+    AsyncStorage.setItem('parentalPin', newPin);
     setShowSetPin(false);
     setNewPin('');
     setConfirmPin('');
