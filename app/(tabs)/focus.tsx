@@ -47,6 +47,34 @@ Notifications.setNotificationHandler({
 });
 
 export default function FocusScreen() {
+  // PIN setting dialog state
+  const [showSetPin, setShowSetPin] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinSetError, setPinSetError] = useState('');
+
+  const handleSetPin = async () => {
+    if (newPin.length !== 4) {
+      setPinSetError('PIN must be 4 digits');
+      return;
+    }
+    if (newPin === '1234') {
+      setPinSetError('Cannot use default PIN (1234).');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinSetError('PINs do not match');
+      return;
+    }
+    setParentalPin(newPin);
+    await AsyncStorage.setItem('parentalPin', newPin);
+    setShowSetPin(false);
+    setNewPin('');
+    setConfirmPin('');
+    setPinSetError('');
+    Alert.alert('Success', 'Parental PIN has been set successfully.');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
   const [isActive, setIsActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedDuration, setSelectedDuration] = useState(5); // minutes
@@ -394,6 +422,57 @@ export default function FocusScreen() {
         onClose={() => setShowPremiumModal(false)}
         featureName="Focus Insights & Analytics"
       />
+      {/* Set PIN Dialog */}
+      {showSetPin && (
+        <View
+          style={[
+            styles.pinContainer,
+            {
+              position: 'absolute',
+              top: '30%',
+              alignSelf: 'center',
+              zIndex: 10,
+            },
+          ]}
+        >
+          <Text style={styles.pinTitle}>Set Parental PIN</Text>
+          <TextInput
+            style={styles.pinInput}
+            value={newPin}
+            onChangeText={setNewPin}
+            keyboardType="numeric"
+            secureTextEntry
+            maxLength={4}
+            placeholder="Enter 4-digit PIN"
+            placeholderTextColor={Colors.personal.textSecondary}
+          />
+          <TextInput
+            style={styles.pinInput}
+            value={confirmPin}
+            onChangeText={setConfirmPin}
+            keyboardType="numeric"
+            secureTextEntry
+            maxLength={4}
+            placeholder="Confirm PIN"
+            placeholderTextColor={Colors.personal.textSecondary}
+          />
+          {pinSetError ? (
+            <Text style={{ color: 'red', marginBottom: 8 }}>{pinSetError}</Text>
+          ) : null}
+          <TouchableOpacity style={styles.pinButton} onPress={handleSetPin}>
+            <Text style={styles.pinButtonText}>Set PIN</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => {
+              setShowSetPin(false);
+              setPinSetError('');
+            }}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.content}>
         <View style={styles.headerTop}>
           <Text style={styles.title}>Focus Mode</Text>
@@ -423,6 +502,15 @@ export default function FocusScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        {/* Set PIN Button (only show when not in session) */}
+        {!isActive && (
+          <TouchableOpacity
+            style={[styles.pinButton, { marginBottom: 16 }]}
+            onPress={() => setShowSetPin(true)}
+          >
+            <Text style={styles.pinButtonText}>Set Parental PIN</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.subtitle}>Choose your focus duration</Text>
 
         <View style={styles.durationContainer}>
