@@ -14,6 +14,7 @@ import {
 import { listDoodles, deleteDoodle, DoodleEntry } from '@/utils/doodleGallery';
 import { shareFile } from '@/utils/doodleExport';
 import { Colors } from '@/constants/Colors';
+import { Modal as RNModal } from 'react-native';
 
 type Props = {
   visible: boolean;
@@ -23,6 +24,7 @@ type Props = {
 export default function DoodleGallery({ visible, onRequestClose }: Props) {
   const [items, setItems] = useState<DoodleEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -73,10 +75,12 @@ export default function DoodleGallery({ visible, onRequestClose }: Props) {
 
   const renderItem = ({ item }: { item: DoodleEntry }) => (
     <View style={styles.card}>
-      <Image
-        source={{ uri: item.thumbnailUri || item.pngUri }}
-        style={styles.thumb}
-      />
+      <TouchableOpacity onPress={() => setPreviewUri(item.pngUri)}>
+        <Image
+          source={{ uri: item.thumbnailUri || item.pngUri }}
+          style={styles.thumb}
+        />
+      </TouchableOpacity>
       <View style={styles.meta}>
         <Text style={styles.date}>
           {new Date(item.createdAt).toLocaleString()}
@@ -133,6 +137,24 @@ export default function DoodleGallery({ visible, onRequestClose }: Props) {
             contentContainerStyle={styles.list}
           />
         )}
+
+        <RNModal
+          visible={!!previewUri}
+          transparent={true}
+          onRequestClose={() => setPreviewUri(null)}
+        >
+          <View style={styles.previewContainer}>
+            <TouchableOpacity
+              style={styles.previewClose}
+              onPress={() => setPreviewUri(null)}
+            >
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
+            {previewUri ? (
+              <Image source={{ uri: previewUri }} style={styles.previewImage} />
+            ) : null}
+          </View>
+        </RNModal>
       </View>
     </Modal>
   );
@@ -203,5 +225,24 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: Colors.personal.textSecondary,
+  },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  previewClose: {
+    position: 'absolute',
+    top: 48,
+    right: 20,
+    zIndex: 20,
+  },
+  previewImage: {
+    width: '100%',
+    height: '80%',
+    resizeMode: 'contain',
+    borderRadius: 8,
   },
 });
