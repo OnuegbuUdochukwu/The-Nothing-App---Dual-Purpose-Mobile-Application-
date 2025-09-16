@@ -18,6 +18,11 @@
   - **Status:** Partially Implemented
   - **Notes:** Core scheduling, persistence and notification trigger logic implemented (`app/(tabs)/schedule.tsx`, `utils/scheduleUtils.ts`). Added permission modal and custom-weekday selector UI in the last pass. Remaining: pre-emptive permission prompt, testing delivery behavior on real devices, and pre-notification (5-min warning) reliability.
 
+  - **Update:** Pre-notification (5-minute warning) logic and reschedule-on-launch implemented.
+    - Files changed: `types/index.ts` (added `preNotificationId`), `utils/scheduleUtils.ts` (added `buildPreNotificationTrigger`), `utils/notificationScheduler.ts` (new helper to schedule/cancel and reschedule persisted sessions), `app/(tabs)/schedule.tsx` (schedules both pre-notice and main notice and persists ids).
+    - Unit tests added: `__tests__/schedulePreNotice.test.ts`, `__tests__/scheduleReschedule.test.ts`.
+    - Validation: All Jest tests pass locally (5 suites, 15 tests). On-device verification still recommended for timing accuracy and platform delivery behaviors.
+
 ---
 
 - ### Wellness Insights
