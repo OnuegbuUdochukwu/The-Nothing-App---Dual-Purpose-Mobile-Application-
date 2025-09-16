@@ -14,10 +14,17 @@ import {
   strokesToSVG,
   saveSVGToFile,
   saveToGallery,
+import { saveDoodle } from '@/utils/doodleGallery';
   shareFile,
 } from '@/utils/doodleExport';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import { Colors } from '@/constants/Colors';
+                        // Persist gallery entry (thumbnail generation TBD)
+                        try {
+                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to persist gallery entry', err);
+                        }
 import { useSubscription } from '@/hooks/useSubscription';
 import { DoodleStroke } from '@/types';
 
@@ -25,6 +32,11 @@ export default function DoodleScreen() {
   const { isPremium } = useSubscription();
   const [strokes, setStrokes] = useState<DoodleStroke[]>([]);
   const [currentColor, setCurrentColor] = useState(Colors.personal.accent);
+                        try {
+                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to persist gallery entry', err);
+                        }
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [banner, setBanner] = useState<{
     type: 'success' | 'error';
@@ -143,17 +155,23 @@ export default function DoodleScreen() {
                         `doodle-${Date.now()}.png`,
                         { width: 1080, height: 1080 }
                       );
-                    } catch (pngErr) {
-                      // PNG capture failed; fall back to SVG export
-                      console.warn(
-                        'PNG capture failed, falling back to SVG',
-                        pngErr
-                      );
-                    }
-
                     if (pngUri) {
                       try {
                         await saveToGallery(pngUri);
+                        // Generate thumbnail and persist gallery entry
+                        try {
+                          // eslint-disable-next-line @typescript-eslint/no-var-requires
+                          const { generateThumbnail } = require('@/utils/doodleThumbnail');
+                          const thumb = await generateThumbnail(pngUri, 200, 200).catch(() => pngUri);
+                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: thumb, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to generate/persist gallery entry', err);
+                          try {
+                            await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
+                          } catch (err2) {
+                            console.warn('Failed to persist gallery entry', err2);
+                          }
+                        }
                         setBanner({
                           type: 'success',
                           text: 'Doodle saved to your gallery.',
@@ -161,19 +179,31 @@ export default function DoodleScreen() {
                         setTimeout(() => setBanner(null), 2500);
                       } catch (e) {
                         await shareFile(pngUri);
+                        try {
+                          // eslint-disable-next-line @typescript-eslint/no-var-requires
+                          const { generateThumbnail } = require('@/utils/doodleThumbnail');
+                          const thumb = await generateThumbnail(pngUri, 200, 200).catch(() => pngUri);
+                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: thumb, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to persist gallery entry after share', err);
+                        }
                         setBanner({
                           type: 'success',
                           text: 'Doodle ready to share.',
                         });
                         setTimeout(() => setBanner(null), 2500);
                       }
-                    } else {
-                      const svg = strokesToSVG(strokes, 1080, 1080);
-                      const fileUri = await saveSVGToFile(svg);
 
                       // Try to save to gallery, fallback to share
                       try {
                         await saveToGallery(fileUri);
+                        try {
+                          // Try to generate a thumbnail but SVG may not be supported by image manipulator
+                          // so default to using the SVG path as thumbnailUri for now.
+                          await saveDoodle({ id: Date.now().toString(), pngUri: fileUri, thumbnailUri: fileUri, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to persist gallery entry for SVG', err);
+                        }
                         setBanner({
                           type: 'success',
                           text: 'Doodle saved to your gallery.',
@@ -182,22 +212,17 @@ export default function DoodleScreen() {
                       } catch (e) {
                         // If gallery save fails, attempt share
                         await shareFile(fileUri);
+                        try {
+                          await saveDoodle({ id: Date.now().toString(), pngUri: fileUri, thumbnailUri: fileUri, createdAt: new Date().toISOString() });
+                        } catch (err) {
+                          console.warn('Failed to persist gallery entry for SVG', err);
+                        }
                         setBanner({
                           type: 'success',
                           text: 'Doodle ready to share.',
                         });
                         setTimeout(() => setBanner(null), 2500);
                       }
-                    }
-
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  } catch (err: any) {
-                    console.error('Save doodle error', err);
-                    Alert.alert(
-                      'Save failed',
-                      err?.message ||
-                        'An error occurred while saving the doodle.'
-                    );
                     setBanner({
                       type: 'error',
                       text: 'Save failed. Check permissions.',
