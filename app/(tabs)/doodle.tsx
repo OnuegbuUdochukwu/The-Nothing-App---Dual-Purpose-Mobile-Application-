@@ -6,43 +6,38 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Trash2, RotateCcw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { Alert } from 'react-native';
 import {
   strokesToSVG,
   saveSVGToFile,
   saveToGallery,
-import { saveDoodle } from '@/utils/doodleGallery';
   shareFile,
 } from '@/utils/doodleExport';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import { Colors } from '@/constants/Colors';
-                        // Persist gallery entry (thumbnail generation TBD)
-                        try {
-                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
-                        } catch (err) {
-                          console.warn('Failed to persist gallery entry', err);
-                        }
 import { useSubscription } from '@/hooks/useSubscription';
 import { DoodleStroke } from '@/types';
+import { saveDoodle } from '@/utils/doodleGallery';
+import PermissionsModal from '@/components/PermissionsModal';
+import { isPermissionError } from '@/utils/doodleSaveUtils';
+import { logEvent } from '@/utils/telemetry';
+import DoodleGallery from '@/components/DoodleGallery';
 
 export default function DoodleScreen() {
   const { isPremium } = useSubscription();
   const [strokes, setStrokes] = useState<DoodleStroke[]>([]);
   const [currentColor, setCurrentColor] = useState(Colors.personal.accent);
-                        try {
-                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
-                        } catch (err) {
-                          console.warn('Failed to persist gallery entry', err);
-                        }
   const [strokeWidth, setStrokeWidth] = useState(3);
   const [banner, setBanner] = useState<{
     type: 'success' | 'error';
     text: string;
   } | null>(null);
-  const canvasRef = React.useRef(null);
+  const canvasRef = React.useRef<any>(null);
+  const [permissionsModalVisible, setPermissionsModalVisible] = useState(false);
+  const [galleryVisible, setGalleryVisible] = useState(false);
 
   // Premium gating: only premium users get full palette and brush styles
   const colors = isPremium
@@ -96,25 +91,21 @@ export default function DoodleScreen() {
             ))}
           </View>
           <View style={styles.widthControls}>
-            {strokeWidths.map((width) => (
+            {strokeWidths.map((w) => (
               <TouchableOpacity
-                key={width}
+                key={w}
                 style={[
                   styles.widthButton,
-                  strokeWidth === width && styles.selectedWidth,
+                  strokeWidth === w && styles.selectedWidth,
                 ]}
-                onPress={() => {
-                  setStrokeWidth(width);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                disabled={!isPremium && width !== 3}
+                onPress={() => setStrokeWidth(w)}
               >
                 <View
                   style={[
                     styles.widthIndicator,
                     {
-                      width: width * 2,
-                      height: width * 2,
+                      width: w * 2,
+                      height: w * 2,
                       backgroundColor: currentColor,
                     },
                   ]}
@@ -123,13 +114,21 @@ export default function DoodleScreen() {
             ))}
           </View>
           <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.actionButton, { marginRight: 6 }]}
+              onPress={() => setGalleryVisible(true)}
+            >
+              <Text style={{ color: Colors.personal.text, fontSize: 12 }}>
+                Gallery
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={undo}>
               <RotateCcw size={20} color={Colors.personal.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={clearCanvas}>
               <Trash2 size={20} color={Colors.personal.text} />
             </TouchableOpacity>
-            {/* Premium-only: Save/Export button placeholder */}
+
             {isPremium && (
               <TouchableOpacity
                 style={styles.actionButton}
@@ -142,8 +141,8 @@ export default function DoodleScreen() {
                       );
                       return;
                     }
-                    // Try PNG-first by capturing the canvas view. Use lazy require so devs
-                    // without the native dependency don't crash at load-time.
+
+                    // PNG-first capture
                     let pngUri: string | null = null;
                     try {
                       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -155,21 +154,43 @@ export default function DoodleScreen() {
                         `doodle-${Date.now()}.png`,
                         { width: 1080, height: 1080 }
                       );
+                    } catch (err) {
+                      console.warn('PNG capture failed', err);
+                      pngUri = null;
+                    }
+
                     if (pngUri) {
                       try {
                         await saveToGallery(pngUri);
-                        // Generate thumbnail and persist gallery entry
                         try {
-                          // eslint-disable-next-line @typescript-eslint/no-var-requires
-                          const { generateThumbnail } = require('@/utils/doodleThumbnail');
-                          const thumb = await generateThumbnail(pngUri, 200, 200).catch(() => pngUri);
-                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: thumb, createdAt: new Date().toISOString() });
+                          const {
+                            generateThumbnail,
+                          } = require('@/utils/doodleThumbnail');
+                          const thumb = await generateThumbnail(
+                            pngUri,
+                            200,
+                            200
+                          ).catch(() => pngUri);
+                          await saveDoodle({
+                            id: Date.now().toString(),
+                            pngUri,
+                            thumbnailUri: thumb,
+                            createdAt: new Date().toISOString(),
+                          });
                         } catch (err) {
-                          console.warn('Failed to generate/persist gallery entry', err);
+                          console.warn(
+                            'Thumbnail/galleries persist failed',
+                            err
+                          );
                           try {
-                            await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: pngUri, createdAt: new Date().toISOString() });
+                            await saveDoodle({
+                              id: Date.now().toString(),
+                              pngUri,
+                              thumbnailUri: pngUri,
+                              createdAt: new Date().toISOString(),
+                            });
                           } catch (err2) {
-                            console.warn('Failed to persist gallery entry', err2);
+                            console.warn('Persist gallery entry failed', err2);
                           }
                         }
                         setBanner({
@@ -177,15 +198,18 @@ export default function DoodleScreen() {
                           text: 'Doodle saved to your gallery.',
                         });
                         setTimeout(() => setBanner(null), 2500);
-                      } catch (e) {
-                        await shareFile(pngUri);
-                        try {
-                          // eslint-disable-next-line @typescript-eslint/no-var-requires
-                          const { generateThumbnail } = require('@/utils/doodleThumbnail');
-                          const thumb = await generateThumbnail(pngUri, 200, 200).catch(() => pngUri);
-                          await saveDoodle({ id: Date.now().toString(), pngUri, thumbnailUri: thumb, createdAt: new Date().toISOString() });
-                        } catch (err) {
-                          console.warn('Failed to persist gallery entry after share', err);
+                      } catch (e: any) {
+                        if (isPermissionError(e)) {
+                          logEvent('doodle_save_permission_denied', {
+                            message: e?.message,
+                          });
+                          setPermissionsModalVisible(true);
+                        } else {
+                          try {
+                            await shareFile(pngUri);
+                          } catch (shareErr) {
+                            console.error('Share fallback failed', shareErr);
+                          }
                         }
                         setBanner({
                           type: 'success',
@@ -193,29 +217,42 @@ export default function DoodleScreen() {
                         });
                         setTimeout(() => setBanner(null), 2500);
                       }
+                    } else {
+                      const svg = strokesToSVG(strokes, 1080, 1080);
+                      const fileUri = await saveSVGToFile(svg);
 
-                      // Try to save to gallery, fallback to share
                       try {
                         await saveToGallery(fileUri);
                         try {
-                          // Try to generate a thumbnail but SVG may not be supported by image manipulator
-                          // so default to using the SVG path as thumbnailUri for now.
-                          await saveDoodle({ id: Date.now().toString(), pngUri: fileUri, thumbnailUri: fileUri, createdAt: new Date().toISOString() });
+                          await saveDoodle({
+                            id: Date.now().toString(),
+                            pngUri: fileUri,
+                            thumbnailUri: fileUri,
+                            createdAt: new Date().toISOString(),
+                          });
                         } catch (err) {
-                          console.warn('Failed to persist gallery entry for SVG', err);
+                          console.warn(
+                            'Failed to persist gallery entry for SVG',
+                            err
+                          );
                         }
                         setBanner({
                           type: 'success',
                           text: 'Doodle saved to your gallery.',
                         });
                         setTimeout(() => setBanner(null), 2500);
-                      } catch (e) {
-                        // If gallery save fails, attempt share
-                        await shareFile(fileUri);
-                        try {
-                          await saveDoodle({ id: Date.now().toString(), pngUri: fileUri, thumbnailUri: fileUri, createdAt: new Date().toISOString() });
-                        } catch (err) {
-                          console.warn('Failed to persist gallery entry for SVG', err);
+                      } catch (e: any) {
+                        if (isPermissionError(e)) {
+                          logEvent('doodle_save_permission_denied', {
+                            message: e?.message,
+                          });
+                          setPermissionsModalVisible(true);
+                        } else {
+                          try {
+                            await shareFile(fileUri);
+                          } catch (shareErr) {
+                            console.error('Share fallback failed', shareErr);
+                          }
                         }
                         setBanner({
                           type: 'success',
@@ -223,6 +260,16 @@ export default function DoodleScreen() {
                         });
                         setTimeout(() => setBanner(null), 2500);
                       }
+                    }
+
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  } catch (err: any) {
+                    console.error('Save doodle error', err);
+                    Alert.alert(
+                      'Save failed',
+                      err?.message ||
+                        'An error occurred while saving the doodle.'
+                    );
                     setBanner({
                       type: 'error',
                       text: 'Save failed. Check permissions.',
@@ -239,16 +286,16 @@ export default function DoodleScreen() {
           </View>
         </View>
       </View>
+
       <DrawingCanvas
         strokes={strokes}
         currentColor={currentColor}
         strokeWidth={strokeWidth}
         onStrokeComplete={handleStrokeComplete}
         backgroundColor={Colors.personal.background}
-        // forward ref to allow the parent to capture the view
         ref={canvasRef}
       />
-      {/* Premium upsell for free users */}
+
       {!isPremium && (
         <View style={{ padding: 16, alignItems: 'center' }}>
           <Text
@@ -257,9 +304,9 @@ export default function DoodleScreen() {
             Unlock more colors, brush styles, and save your doodles with
             Premium!
           </Text>
-          {/* You can add a PremiumModal or upgrade button here */}
         </View>
       )}
+
       {banner && (
         <View
           style={{
@@ -279,6 +326,17 @@ export default function DoodleScreen() {
           <Text style={{ color: Colors.common.white }}>{banner.text}</Text>
         </View>
       )}
+
+      <PermissionsModal
+        visible={permissionsModalVisible}
+        title="Media permission required"
+        message="To save doodles to your gallery we need access to your photos. Open Settings to allow access."
+        onRequestClose={() => setPermissionsModalVisible(false)}
+      />
+      <DoodleGallery
+        visible={galleryVisible}
+        onRequestClose={() => setGalleryVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -304,11 +362,9 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
   },
   colorPalette: {
     flexDirection: 'row',
-    gap: 8,
   },
   colorButton: {
     width: 28,
@@ -316,13 +372,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 2,
     borderColor: 'transparent',
+    marginRight: 8,
   },
   selectedColor: {
     borderColor: Colors.personal.text,
   },
   widthControls: {
     flexDirection: 'row',
-    gap: 8,
+    marginLeft: 8,
   },
   widthButton: {
     width: 32,
@@ -333,6 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.personal.border,
+    marginRight: 8,
   },
   selectedWidth: {
     borderColor: Colors.personal.accent,
@@ -342,7 +400,6 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
     marginLeft: 'auto',
   },
   actionButton: {
@@ -354,5 +411,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.personal.border,
+    marginLeft: 8,
   },
 });

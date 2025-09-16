@@ -1,5 +1,3 @@
-import { captureRef } from 'react-native-view-shot';
-
 /**
  * Capture a view ref (the drawing canvas) and write a PNG to the cache directory.
  * Returns the file URI of the PNG.
@@ -10,6 +8,17 @@ export async function captureCanvasAsPNG(
   options?: { width?: number; height?: number; quality?: number }
 ) {
   if (!ref) throw new Error('No ref provided to captureCanvasAsPNG');
+
+  // Lazy-require to avoid TypeScript/runtime issues when native module isn't installed in test env
+  let captureRef: any;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    captureRef = require('react-native-view-shot').captureRef;
+  } catch (e) {
+    throw new Error(
+      'react-native-view-shot is required for PNG capture. Install it in the project.'
+    );
+  }
 
   let FileSystem: any;
   try {
