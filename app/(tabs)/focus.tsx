@@ -232,7 +232,10 @@ export default function FocusScreen() {
           });
           // keep last 100
           stored = stored.slice(0, 100);
-          await AsyncStorage.setItem(FOCUS_SESSIONS_KEY, JSON.stringify(stored));
+          await AsyncStorage.setItem(
+            FOCUS_SESSIONS_KEY,
+            JSON.stringify(stored)
+          );
         } catch (e) {
           console.error('Failed to persist focus session', e);
         }

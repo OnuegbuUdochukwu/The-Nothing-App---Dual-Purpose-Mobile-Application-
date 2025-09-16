@@ -15,7 +15,10 @@ import { Colors } from '@/constants/Colors';
 import { ScheduledSession } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { buildNotificationTrigger, buildPreNotificationTrigger } from '@/utils/scheduleUtils';
+import {
+  buildNotificationTrigger,
+  buildPreNotificationTrigger,
+} from '@/utils/scheduleUtils';
 import PermissionsModal from '@/components/PermissionsModal';
 import WeekdaySelector from '@/components/WeekdaySelector';
 

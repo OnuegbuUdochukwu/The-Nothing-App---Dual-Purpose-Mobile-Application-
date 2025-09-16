@@ -1,7 +1,16 @@
-import { totalPerDay, totalPerWeek, totalPerMonth, streak } from '@/utils/insights';
+import {
+  totalPerDay,
+  totalPerWeek,
+  totalPerMonth,
+  streak,
+} from '@/utils/insights';
 import { FocusSession } from '@/types';
 
-function makeSession(dateStr: string, duration: number, completed = true): FocusSession {
+function makeSession(
+  dateStr: string,
+  duration: number,
+  completed = true
+): FocusSession {
   return {
     id: dateStr + '-' + duration,
     duration,
@@ -25,10 +34,10 @@ describe('insights utilities', () => {
   });
 
   test('totalPerWeek sums correct week', () => {
-  // week starting 2025-09-07 (Sunday UTC) -- includes 2025-09-12 and 2025-09-13
-  const weekStart = new Date(Date.UTC(2025, 8, 7));
-  const total = totalPerWeek(sessions, weekStart);
-  expect(total).toBe(20 + 25);
+    // week starting 2025-09-07 (Sunday UTC) -- includes 2025-09-12 and 2025-09-13
+    const weekStart = new Date(Date.UTC(2025, 8, 7));
+    const total = totalPerWeek(sessions, weekStart);
+    expect(total).toBe(20 + 25);
   });
 
   test('totalPerMonth sums month', () => {
