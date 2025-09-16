@@ -14,6 +14,7 @@ export const Colors = {
     textSecondary: '#666666',
     yellow: '#FFD700',
     blue: '#4169E1',
+    accent: '#4169E1',
     red: '#FF4500',
     green: '#32CD32',
   },
@@ -24,5 +25,6 @@ export const Colors = {
     success: '#4CAF50',
     warning: '#FF9800',
     error: '#F44336',
-  }
+    gold: '#D4AF37',
+  },
 };

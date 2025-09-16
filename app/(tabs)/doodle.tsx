@@ -9,6 +9,13 @@ import {
 } from 'react-native';
 import { Trash2, RotateCcw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { Alert } from 'react-native';
+import {
+  strokesToSVG,
+  saveSVGToFile,
+  saveToGallery,
+  shareFile,
+} from '@/utils/doodleExport';
 import DrawingCanvas from '@/components/DrawingCanvas';
 import { Colors } from '@/constants/Colors';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -109,8 +116,37 @@ export default function DoodleScreen() {
             {isPremium && (
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => {
-                  /* TODO: implement save/export */
+                onPress={async () => {
+                  try {
+                    if (!strokes || strokes.length === 0) {
+                      Alert.alert(
+                        'Nothing to save',
+                        'Please draw something before saving.'
+                      );
+                      return;
+                    }
+
+                    const svg = strokesToSVG(strokes, 1080, 1080);
+                    const fileUri = await saveSVGToFile(svg);
+
+                    // Try to save to gallery, fallback to share
+                    try {
+                      await saveToGallery(fileUri);
+                      Alert.alert('Saved', 'Doodle saved to your gallery.');
+                    } catch (e) {
+                      // If gallery save fails, attempt share
+                      await shareFile(fileUri);
+                    }
+
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  } catch (err: any) {
+                    console.error('Save doodle error', err);
+                    Alert.alert(
+                      'Save failed',
+                      err?.message ||
+                        'An error occurred while saving the doodle.'
+                    );
+                  }
                 }}
               >
                 <Text style={{ color: Colors.personal.text, fontSize: 12 }}>

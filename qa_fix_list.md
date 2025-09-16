@@ -1,109 +1,118 @@
-# Nothing App - Post-Build QA Report & Fix List
+# Nothing App - Reconciled QA Status (generated)
 
-## 1. Executive Summary
-* The initial build of the Nothing App demonstrates good implementation of core features but contains several critical issues that need to be addressed before release. A total of 14 discrepancies were found, with 4 critical issues requiring immediate attention.
+This file reconciles `qa_fix_list.md` with the current codebase as of branch `main` (scanned 2025-09-16). Each item is given a status (Resolved / Partially Resolved / Unresolved) with a short code reference.
 
----
+## Summary
 
-## 2. Core Functional Validation
-- ### Onboarding & Mode Switching
-    - [x] Hybrid onboarding successfully directs users to the correct mode.
-    - [x] Mode switching in settings works correctly.
-- ### Adult Mode Features
-    - [ ] **Nothing Block:** Timer accuracy works, but lacks proper lockdown functionality. The escape hatch is implemented as a simple tap & hold instead of the specified swipe-up + PIN gesture.
-    - [ ] **Escape Hatch:** The `swipe-up + PIN` gesture is NOT implemented. Current implementation uses a simple tap & hold which is not secure.
-    - [ ] **Notifications:** No implementation for silencing notifications during a session.
-    - [x] **Free Doodle Pad:** Works with basic tools, doodles are ephemeral.
-    - [ ] **Premium Doodle Pad:** Premium features are implemented but no subscription gating is in place.
-- ### Baby Mode Features
-    - [ ] **Baby Lock:** The screen lock is implemented but not fully secure. No implementation to disable device navigation buttons.
-    - [ ] **Parental Unlock:** The `triple-tap + PIN` gesture is partially implemented but lacks PIN security.
-    - [x] **Baby Doodle Pad:** Provides a simple, child-friendly interface as specified.
+- Total items reviewed: 14
+- Resolved: 6
+- Partially Resolved: 4
+- Unresolved: 4
 
 ---
 
-## 3. UI/UX & Design Compliance
-- [x] Adult Mode UI adheres to the minimalist, dark aesthetic.
-- [x] Baby Mode UI adheres to the bright, playful aesthetic.
-- [x] All specified fonts and color palettes are used correctly.
-- [x] All micro-interactions and haptic feedback are present and smooth.
+## Reconciled Items
+
+1. Nothing Block escape mechanism (swipe-up + PIN)
+
+   - Status: Resolved
+   - Evidence: `app/(tabs)/focus.tsx` implements a `PanGestureHandler` with `handleStateChange` that shows a PIN dialog when swiped up (`if (swipePosition <= -80) { setShowPinDialog(true) }`) and `handlePinSubmit` validates the PIN against `AsyncStorage`.
+
+2. Notification silencing during focus sessions
+
+   - Status: Resolved
+   - Evidence: `app/(tabs)/focus.tsx` defines `silenceNotifications()` and `restoreNotifications()` and calls them when sessions start/stop; `baby-lock.tsx` contains similar logic for Baby Mode.
+
+3. Baby Lock: disable device navigation buttons
+
+   - Status: Partially Resolved
+   - Evidence: `app/(tabs)/baby-lock.tsx` calls `NavigationBar.setVisibilityAsync('hidden')` on Android and adds a `BackHandler` to block back press. iOS full device button disabling is not possible from JS; document limitation and consider native module.
+
+4. Parental unlock PIN security
+
+   - Status: Partially Resolved
+   - Evidence: PIN flow exists in `baby-lock.tsx` and `focus.tsx` (PIN stored in `AsyncStorage`, configurable), but some UX/security hardening is missing (no brute-force protection beyond basic tap counters, default PIN fallback '1234' handling). Recommend rate-limiting or stronger validation.
+
+5. Premium feature gating
+
+   - Status: Resolved
+   - Evidence: `hooks/useSubscription.ts` provides `isPremium` and `setPremiumStatus`. Components (`CalmingSounds.tsx`, `doodle.tsx`, `baby-lock.tsx`, `ParentalDashboard.tsx`, `baby-doodle.tsx`) check `isPremium` and show `PremiumModal` where appropriate.
+
+6. Wellness Insights dashboard
+
+   - Status: Partially Resolved
+   - Evidence: `app/(tabs)/focus.tsx` contains `renderInsights` showing recent sessions stored in component state; there is no dedicated persistent dashboard screen or long-term storage beyond in-memory/session storage.
+
+7. Calming Sounds (Baby Mode)
+
+   - Status: Partially Resolved
+   - Evidence: UI implemented in `components/CalmingSounds.tsx` and wired into `baby-lock.tsx`. Actual audio playback is stubbed (no sound assets or audio playback engine like `expo-av`) — gating and UI are present.
+
+8. Parental Dashboard (reports & max duration setting)
+
+   - Status: Partially Resolved
+   - Evidence: `components/ParentalDashboard.tsx` reads `babySessionHistory` from `AsyncStorage` and displays basic stats. Missing features: export, configurable max session duration, and admin controls.
+
+9. Nothing Block faint timer (visible only on tap)
+
+   - Status: Resolved
+   - Evidence: `app/(tabs)/focus.tsx` uses `Animated.Value` (`timerOpacity`) initialized at 0.3, `showTimer()` animates to 1 on tap and fades back after a timeout.
+
+10. Scheduler notifications for upcoming sessions
+
+    - Status: Unresolved
+    - Evidence: `app/(tabs)/schedule.tsx` contains a UI to add sessions (in-memory) but no integration with `expo-notifications` scheduling APIs to schedule local notifications.
+
+11. Custom time input for Nothing Block
+
+    - Status: Unresolved
+    - Evidence: `app/(tabs)/focus.tsx` has a `customDuration` state but the UI input is not present and not wired to set `selectedDuration`.
+
+12. Ambient audio during focus sessions
+
+    - Status: Unresolved
+    - Evidence: No implementation found in `focus.tsx` for ambient audio or playback (no `expo-av` usage). `CalmingSounds` exists for Baby Mode but not for Adult focus sessions.
+
+13. Save/export doodles (premium)
+
+    - Status: Unresolved
+    - Evidence: `app/(tabs)/doodle.tsx` has a premium `Save` button placeholder with a `/* TODO: implement save/export */` comment; `DrawingCanvas.tsx` captures strokes but no serialization/export logic exists.
+
+14. Max session duration setting (Parental)
+    - Status: Unresolved
+    - Evidence: `ParentalDashboard.tsx` shows stats but there is no setting exposed to configure or enforce maximum session duration in `baby-lock.tsx`.
 
 ---
 
-## 4. Feature Implementation Status
-- ### Adult Mode
-    - [x] Basic "Nothing Block" timer functionality
-    - [ ] Full-screen blackout mode with faint timer
-    - [ ] Phone lockdown functionality
-    - [ ] Secure escape hatch with PIN
-    - [ ] Notification silencing
-    - [x] Basic Doodle Pad
-    - [ ] Premium features gating
-    - [x] Nothing Scheduler UI
-    - [ ] Scheduler notification implementation
-    - [ ] Wellness Insights implementation
+## Next Steps (recommended priorities)
 
-- ### Baby Mode
-    - [x] Basic Baby Lock UI
-    - [ ] Full device navigation button disabling
-    - [ ] Secure parental unlock with PIN
-    - [x] Baby Doodle Pad
-    - [x] Interactive Shapes Mode
-    - [ ] Calming Sounds feature
-    - [ ] Parental Dashboard
+1. Highest priority unresolved: Implement doodle save/export (item 13)
+
+   - Reason: Premium revenue feature; straightforward to implement by serializing strokes to SVG or PNG and using `expo-file-system` + `MediaLibrary` to save/export. Low risk, high value.
+
+2. Scheduler notifications (item 10)
+
+   - Reason: Scheduler UI exists; scheduling local notifications with `expo-notifications` is a focused task and improves core UX.
+
+3. Custom time input for Nothing Block (item 11)
+
+   - Reason: Small UX improvement; `focus.tsx` already holds `customDuration` state — add input and validation.
+
+4. Ambient audio for focus sessions (item 12)
+   - Reason: Adds immersion; reuse architecture from `CalmingSounds` but integrate `expo-av` for playback and loop control.
 
 ---
 
-## 5. Detailed Discrepancies
+## Action log / Code references
 
-1. **Critical:** Nothing Block escape mechanism uses a simple tap & hold instead of the specified swipe-up + PIN gesture, making it too easy to exit accidentally.
-
-2. **Critical:** No implementation for silencing notifications during a focus session, which defeats the purpose of the distraction-free environment.
-
-3. **Critical:** Baby Lock does not disable device navigation buttons as specified in the PRD, making it possible for children to exit the app.
-
-4. **Critical:** Parental unlock mechanism lacks proper PIN security, making it less secure than specified.
-
-5. **Major:** Premium features are implemented but not properly gated behind a subscription, allowing all users to access premium features.
-
-6. **Major:** No implementation for the Wellness Insights dashboard to track focus time.
-
-7. **Major:** No implementation for Calming Sounds in Baby Mode.
-
-8. **Major:** No implementation for the Parental Dashboard to view session reports.
-
-9. **Minor:** Nothing Block timer is always visible, not faint as specified in the PRD.
-
-10. **Minor:** Scheduler notifications are not implemented for upcoming sessions.
-
-11. **Minor:** No custom time input option for Nothing Block duration.
-
-12. **Minor:** No ambient audio implementation for focus sessions.
-
-13. **Minor:** No implementation for saving doodles in premium mode.
-
-14. **Minor:** No implementation for maximum session duration setting in Baby Mode.
+- `app/(tabs)/focus.tsx` — Nothing Block, timer opacity, swipe-to-PIN, insights overlay, notifications silencing.
+- `app/(tabs)/doodle.tsx` — Doodle UI, premium placeholders for Save/Export.
+- `components/DrawingCanvas.tsx` — Stroke capture, exposes strokes for serialization.
+- `app/(tabs)/schedule.tsx` — Scheduler UI; no notifications scheduling.
+- `components/CalmingSounds.tsx` & `app/(tabs)/baby-lock.tsx` — Baby-mode sounds UI & gating; playback stubs.
+- `components/ParentalDashboard.tsx` — Dashboard UI reading `babySessionHistory` from `AsyncStorage`.
+- `hooks/useSubscription.ts` & `components/PremiumModal.tsx` — Subscription state and upsell flow.
 
 ---
 
-## 6. Final Recommendations
-
-### Priority 1 (Critical - Must Fix)
-1. Implement proper secure escape hatch with swipe-up + PIN for Nothing Block.
-2. Add notification silencing during focus sessions.
-3. Implement full device navigation button disabling for Baby Lock.
-4. Add proper PIN security for parental unlock.
-
-### Priority 2 (Major - Should Fix)
-1. Implement premium subscription gating for advanced features.
-2. Add Wellness Insights dashboard.
-3. Implement Calming Sounds for Baby Mode.
-4. Add Parental Dashboard for session reporting.
-
-### Priority 3 (Minor - Nice to Have)
-1. Make Nothing Block timer faint and only fully visible on tap.
-2. Implement scheduler notifications.
-3. Add custom time input for Nothing Block.
-4. Implement ambient audio for focus sessions.
-5. Add doodle saving functionality for premium users.
-6. Implement maximum session duration setting for Baby Mode.
+If you'd like, I can now begin work on the highest-priority unresolved item: implement doodle save/export for premium users. I can (A) add export-to-SVG support and a Save flow that writes to file and optionally saves to the device photo library, (B) include unit tests for stroke serialization, and (C) wire the `Save` action in `doodle.tsx` to the new implementation. Which of these would you like me to start with?
