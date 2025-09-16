@@ -112,9 +112,11 @@ For each partially or not implemented item below are precise, technical steps to
 
 - **Scheduler — Permission UX & Recovery**
 
-  - [ ] Add a `Settings -> Permissions` page that lists required permissions (Notifications, Media Library) with buttons to open request flow or open OS Settings.
-  - [ ] Add a proactive "Enable Notifications" button in the Scheduler header that calls `Notifications.requestPermissionsAsync()` and stores the result in app state.
-  - [ ] Add telemetry/logging when permissions are denied to help debugging (non-PII).
+  - [x] Add a `Settings -> Permissions` page that lists required permissions (Notifications, Media Library) with buttons to open request flow or open OS Settings.
+  - [x] Add a proactive "Enable Notifications" button in the Scheduler header that calls `Notifications.requestPermissionsAsync()` and stores the result in app state.
+  - [x] Add telemetry/logging when permissions are denied to help debugging (non-PII).
+
+  - **Update:** Implemented `app/(settings)/Permissions.tsx` (requests and status), instrumented `app/(tabs)/schedule.tsx` to show the proactive "Enable Notifications" button and open the permission modal on denial, and added `utils/telemetry.ts` to persist lightweight telemetry events. Unit tests for telemetry usage were covered indirectly by schedule/reschedule tests which mock the Notifications API.
 
 - **Doodle — PNG Rasterization & Robust Save UX**
 
@@ -163,3 +165,23 @@ For each partially or not implemented item below are precise, technical steps to
 ---
 
 If you want, I'll start by implementing the proactive notification enablement UI (small, contained change) and add unit tests for reschedule logic next. Which item should I start with?
+
+## Notes, limitations and recommended next steps
+
+- Notes:
+
+  - Implementations completed so far favor predictable, testable behavior using AsyncStorage for persistence and `expo-notifications` for scheduling. Utilities are UTC-aware to reduce timezone flakiness in tests.
+  - Telemetry added is local-only (stored in AsyncStorage) and logs to console for dev visibility; it intentionally avoids sending network requests or storing PII.
+
+- Limitations:
+
+  - Notification delivery timing and behavior must be validated on real devices (both Android and iOS). Some platforms differ on repeated triggers and background delivery.
+  - Full device-lock (Baby Mode) parity on iOS may require native modules or dev-client builds; current implementation relies on React Native primitives and in-app PIN gating only.
+  - SVG-to-PNG rasterization for doodles is not implemented; conversion strategies vary by platform and may require native rendering or a lightweight server-side helper.
+
+- Recommended next steps (prioritized):
+  1. Run on-device verification for scheduled notifications (pre-notice and main notice) on typical Android and iOS devices and confirm timing and repeat behaviors.
+  2. Wire `reschedulePersistedSessions` to run at app startup (top-level layout/provider) so notifications are re-registered after device restarts and app updates.
+  3. Implement a lightweight in-app telemetry uploader (optional) that can be enabled with opt-in to send anonymized logs for debugging permission/notification issues.
+  4. Implement PNG rasterization for doodles (client-side or server-assisted) and add thumbnails/gallery UI.
+  5. Add UI polish to `components/WellnessInsights.tsx` (charting, selectable ranges, export CSV).

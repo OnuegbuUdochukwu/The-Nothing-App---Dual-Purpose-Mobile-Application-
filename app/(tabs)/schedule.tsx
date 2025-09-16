@@ -19,6 +19,7 @@ import {
   buildNotificationTrigger,
   buildPreNotificationTrigger,
 } from '@/utils/scheduleUtils';
+import { logEvent } from '@/utils/telemetry';
 import PermissionsModal from '@/components/PermissionsModal';
 import WeekdaySelector from '@/components/WeekdaySelector';
 
@@ -309,6 +310,12 @@ export default function ScheduleScreen() {
                 onPress: async () => {
                   const r = await Notifications.requestPermissionsAsync();
                   setNotifStatus(r.status || 'unknown');
+                  if (r.status !== 'granted') {
+                    logEvent('permission_denied', {
+                      permission: 'notifications',
+                    });
+                    setShowPermissionModal(true);
+                  }
                 },
               },
               React.createElement(

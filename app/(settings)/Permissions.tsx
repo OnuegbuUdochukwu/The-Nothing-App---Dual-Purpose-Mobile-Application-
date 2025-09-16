@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
 import { Colors } from '@/constants/Colors';
 import * as Haptics from 'expo-haptics';
+import { logEvent } from '@/utils/telemetry';
 
 export default function PermissionsSettings() {
   const [notifStatus, setNotifStatus] = React.useState<string>('unknown');
@@ -39,6 +40,7 @@ export default function PermissionsSettings() {
     const r = await Notifications.requestPermissionsAsync();
     setNotifStatus(r.status || 'unknown');
     if (r.status !== 'granted') {
+      logEvent('permission_denied', { permission: 'notifications' });
       Alert.alert(
         'Permission denied',
         'Open Settings to enable notifications.',
@@ -55,6 +57,7 @@ export default function PermissionsSettings() {
     const r = await MediaLibrary.requestPermissionsAsync();
     setMediaStatus(r.status || 'unknown');
     if (r.status !== 'granted') {
+      logEvent('permission_denied', { permission: 'media-library' });
       Alert.alert(
         'Permission denied',
         'Open Settings to enable media access.',
