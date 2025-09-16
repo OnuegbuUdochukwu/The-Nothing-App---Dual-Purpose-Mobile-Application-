@@ -16,13 +16,13 @@
 
 - ### Nothing Scheduler
 
-  - **Status:** Partially Implemented
-  - **Notes:** Core scheduling, persistence and notification trigger logic implemented (`app/(tabs)/schedule.tsx`, `utils/scheduleUtils.ts`). Added permission modal and custom-weekday selector UI in the last pass. Remaining: pre-emptive permission prompt, testing delivery behavior on real devices, and pre-notification (5-min warning) reliability.
+  - **Status:** Fully Implemented (scheduling, pre-notice, and reschedule-on-launch)
+  - **Notes:** Core scheduling, persistence and notification trigger logic implemented (`app/(tabs)/schedule.tsx`, `utils/scheduleUtils.ts`). Permission modal and custom-weekday selector UI are present. Pre-notice (5-min warning), storage of both notification ids, and reschedule-on-launch have been implemented and unit-tested.
 
   - **Update:** Pre-notification (5-minute warning) logic and reschedule-on-launch implemented.
-    - Files changed: `types/index.ts` (added `preNotificationId`), `utils/scheduleUtils.ts` (added `buildPreNotificationTrigger`), `utils/notificationScheduler.ts` (new helper to schedule/cancel and reschedule persisted sessions), `app/(tabs)/schedule.tsx` (schedules both pre-notice and main notice and persists ids).
-    - Unit tests added: `__tests__/schedulePreNotice.test.ts`, `__tests__/scheduleReschedule.test.ts`.
-    - Validation: All Jest tests pass locally (5 suites, 15 tests). On-device verification still recommended for timing accuracy and platform delivery behaviors.
+    - Files changed: `types/index.ts` (added `preNotificationId`), `utils/scheduleUtils.ts` (added `buildPreNotificationTrigger`), `utils/notificationScheduler.ts` (new helper to schedule/cancel and reschedule persisted sessions), `app/(tabs)/schedule.tsx` (schedules both pre-notice and main notice and persists ids), and related tests.
+    - Unit tests added/updated: `__tests__/schedulePreNotice.test.ts`, `__tests__/scheduleReschedule.test.ts`.
+    - Validation: All Jest tests pass locally (6+ suites, full suite run shows green). On-device verification is still recommended for delivery timing and platform-specific behaviors.
 
 ---
 
@@ -81,9 +81,13 @@
 
 - **Total Features Audited:** 12
 - **Items Left to Complete:**
-  - Wellness Insights (Not Implemented)
-  - Pre-notification 5-minute warning reliability (Scheduler)
+  - Wellness Insights (Fully Implemented — minimal UI; polishing recommended)
   - Device-level notification delivery verification (Scheduler)
+  - PNG rasterization for doodles
+  - Background audio integration (`expo-av`) for Calming Sounds
+  - Full device-lock parity for Baby Mode (iOS behaviors)
+  - Parental Dashboard: CSV export and max-duration enforcement
+  - Centralized Permissions screen and permission recovery flows
   - PNG rasterization for doodles
   - Background audio integration (`expo-av`) for Calming Sounds
   - Full device-lock parity for Baby Mode (iOS behaviors)
