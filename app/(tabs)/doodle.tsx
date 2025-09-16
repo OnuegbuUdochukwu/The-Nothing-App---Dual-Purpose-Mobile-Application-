@@ -25,6 +25,7 @@ import PermissionsModal from '@/components/PermissionsModal';
 import { isPermissionError } from '@/utils/doodleSaveUtils';
 import { logEvent } from '@/utils/telemetry';
 import DoodleGallery from '@/components/DoodleGallery';
+import SVGToPNGWebView from '@/components/SVGToPNGWebView';
 
 export default function DoodleScreen() {
   const { isPremium } = useSubscription();
@@ -38,6 +39,85 @@ export default function DoodleScreen() {
   const canvasRef = React.useRef<any>(null);
   const [permissionsModalVisible, setPermissionsModalVisible] = useState(false);
   const [galleryVisible, setGalleryVisible] = useState(false);
+  const [svgConverterVisible, setSvgConverterVisible] = useState(false);
+  const [pendingSvgForConversion, setPendingSvgForConversion] = useState<
+    string | null
+  >(null);
+
+  const handleSvgConversionResult = async (base64Png: string) => {
+    try {
+      // Write base64 to file and continue the same save flow
+      // Lazy require expo-file-system
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const FileSystem = require('expo-file-system');
+      const filename = `doodle-${Date.now()}.png`;
+      const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
+      const dest = `${dir}${filename}`;
+      await FileSystem.writeAsStringAsync(dest, base64Png, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // proceed with thumbnail/galleries persist logic
+      try {
+        await saveToGallery(dest);
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { generateThumbnail } = require('@/utils/doodleThumbnail');
+          const thumb = await generateThumbnail(dest, 200, 200).catch(
+            () => dest
+          );
+          await saveDoodle({
+            id: Date.now().toString(),
+            pngUri: dest,
+            thumbnailUri: thumb,
+            createdAt: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.warn('Thumbnail/galleries persist failed', err);
+          try {
+            await saveDoodle({
+              id: Date.now().toString(),
+              pngUri: dest,
+              thumbnailUri: dest,
+              createdAt: new Date().toISOString(),
+            });
+          } catch (err2) {
+            console.warn('Persist gallery entry failed', err2);
+          }
+        }
+        setBanner({
+          type: 'success',
+          text: 'Doodle saved to your gallery.',
+        });
+        setTimeout(() => setBanner(null), 2500);
+      } catch (e: any) {
+        if (isPermissionError(e)) {
+          logEvent('doodle_save_permission_denied', {
+            message: e?.message,
+          });
+          setPermissionsModalVisible(true);
+        } else {
+          try {
+            await shareFile(dest);
+          } catch (shareErr) {
+            console.error('Share fallback failed', shareErr);
+          }
+        }
+        setBanner({
+          type: 'success',
+          text: 'Doodle ready to share.',
+        });
+        setTimeout(() => setBanner(null), 2500);
+      }
+    } catch (err) {
+      console.error('SVG conversion write failed', err);
+      setBanner({ type: 'error', text: 'Save failed. Check permissions.' });
+      setTimeout(() => setBanner(null), 2500);
+    } finally {
+      setSvgConverterVisible(false);
+      setPendingSvgForConversion(null);
+    }
+  };
 
   // Premium gating: only premium users get full palette and brush styles
   const colors = isPremium
@@ -219,6 +299,27 @@ export default function DoodleScreen() {
                       }
                     } else {
                       const svg = strokesToSVG(strokes, 1080, 1080);
+
+                      // If react-native-webview is available at runtime, use the
+                      // WebView-based converter component to rasterize the SVG to PNG
+                      // and continue the save flow in `handleSvgConversionResult`.
+                      let webviewAvailable = false;
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                        require('react-native-webview');
+                        webviewAvailable = true;
+                      } catch (err) {
+                        webviewAvailable = false;
+                      }
+
+                      if (webviewAvailable) {
+                        setPendingSvgForConversion(svg);
+                        setSvgConverterVisible(true);
+                        // The converter component will handle the rest via callback.
+                        return;
+                      }
+
+                      // Fallback: save the SVG file and attempt to save/share that file.
                       const fileUri = await saveSVGToFile(svg);
 
                       try {
@@ -332,6 +433,17 @@ export default function DoodleScreen() {
         title="Media permission required"
         message="To save doodles to your gallery we need access to your photos. Open Settings to allow access."
         onRequestClose={() => setPermissionsModalVisible(false)}
+      />
+      <SVGToPNGWebView
+        visible={svgConverterVisible}
+        svgXml={pendingSvgForConversion || ''}
+        width={1080}
+        height={1080}
+        onResult={handleSvgConversionResult}
+        onCancel={() => {
+          setSvgConverterVisible(false);
+          setPendingSvgForConversion(null);
+        }}
       />
       <DoodleGallery
         visible={galleryVisible}

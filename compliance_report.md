@@ -10,8 +10,8 @@
 
 - ### Adult Doodle Pad
   - **Status:** Partially Implemented
-  - **Notes:** The canvas and basic free-tier behavior are implemented (`app/(tabs)/doodle.tsx`, `components/DrawingCanvas.tsx`). Premium save/export via `utils/doodleExport.ts` exists (SVG). Missing: PNG rasterization, richer brushes, and thumbnails. Save UX now includes a transient banner but needs edge-case handling for permission denial.
-  - **Update:** PNG rasterization work started. Canvas now exposes a ref and the save flow attempts PNG capture first using `utils/doodleRaster.ts` (requires `react-native-view-shot` at runtime). If PNG capture fails the system falls back to SVG export. Thumbnails and gallery storage are next.
+  - **Notes:** The canvas and basic free-tier behavior are implemented (`app/(tabs)/doodle.tsx`, `components/DrawingCanvas.tsx`). Premium save/export via `utils/doodleExport.ts` exists (SVG). PNG rasterization remains a planned improvement, but significant save UX work is completed: the save flow now attempts PNG capture first via `utils/doodleRaster.ts` (lazy-requires `react-native-view-shot` at runtime) with a robust SVG fallback. Gallery thumbnails, local persistence, and a gallery UI are implemented and wired into the doodle screen; permission-denial flows show a helpful modal and telemetry is captured.
+  - **Update:** PNG rasterization work started but not yet completed as a full client-side rasterizer. Canvas now exposes a ref and the save flow attempts PNG capture first using `utils/doodleRaster.ts`. If PNG capture fails the system falls back to SVG export. Thumbnails and gallery storage have been implemented (`utils/doodleGallery.ts`, `components/DoodleGallery.tsx`) and covered by unit/UI tests.
 
 ---
 
@@ -73,8 +73,11 @@
 ---
 
 - ### Security & Permissions
+
   - **Status:** Partially Implemented
   - **Notes:** Permission prompts are present in context (doodle export, schedule). Added a `PermissionsModal` for UX. Lacks a centralized permissions settings screen and clear recovery flows.
+
+  - **Update:** A centralized permissions screen has been added at `app/(settings)/Permissions.tsx` which lists and requests Notifications and Media Library permissions and exposes an open-settings fallback. Permission-related telemetry and the `PermissionsModal` are wired into the save/schedule flows. Recovery flows are present but may be refined for UX consistency.
 
 ---
 
@@ -85,11 +88,13 @@
   - Wellness Insights (Fully Implemented — minimal UI; polishing recommended)
   - Device-level notification delivery verification (Scheduler)
   - PNG rasterization for doodles
+  - PNG rasterization for doodles (IN-PROGRESS — WebView fallback added)
   - Background audio integration (`expo-av`) for Calming Sounds
   - Full device-lock parity for Baby Mode (iOS behaviors)
   - Parental Dashboard: CSV export and max-duration enforcement
   - Centralized Permissions screen and permission recovery flows
   - PNG rasterization for doodles
+  - PNG rasterization for doodles (IN-PROGRESS — WebView fallback added)
   - Background audio integration (`expo-av`) for Calming Sounds
   - Full device-lock parity for Baby Mode (iOS behaviors)
   - Parental Dashboard: CSV export and max-duration enforcement
@@ -110,9 +115,10 @@ For each partially or not implemented item below are precise, technical steps to
 - **Scheduler — Pre-notification & Reliability**
 
   - [ ] Add pre-notification logic: when scheduling a session, schedule two notifications — a 5-min pre-notice and the actual start notification. Use `utils/scheduleUtils.buildNotificationTrigger` to compute both triggers.
-  - [ ] Add configuration to `ScheduledSession` to store both `notificationId` and `preNotificationId`.
-  - [ ] Implement a method to re-register notifications on app launch (scan persisted sessions and schedule upcoming notifications within the next 7 days).
-  - [ ] Add unit tests for trigger calculation and rescheduling logic (`__tests__/scheduleReschedule.test.ts`).
+  - [x] Add pre-notification logic: when scheduling a session, schedule two notifications — a 5-min pre-notice and the actual start notification. Use `utils/scheduleUtils.buildNotificationTrigger` to compute both triggers.
+  - [x] Add configuration to `ScheduledSession` to store both `notificationId` and `preNotificationId`.
+  - [x] Implement a method to re-register notifications on app launch (scan persisted sessions and schedule upcoming notifications within the next 7 days).
+  - [x] Add unit tests for trigger calculation and rescheduling logic (`__tests__/scheduleReschedule.test.ts`).
   - [ ] Device test: run on Android and iOS devices to confirm scheduled delivery within acceptable timing.
 
 - **Scheduler — Permission UX & Recovery**
@@ -126,9 +132,9 @@ For each partially or not implemented item below are precise, technical steps to
 - **Doodle — PNG Rasterization & Robust Save UX**
 
   - [ ] Add SVG-to-PNG rasterization using `react-native-svg` with an offscreen render, or use a serverless function if client-side conversion is not feasible for mobile.
-  - [ ] Add fallback UX: if `saveToGallery` fails due to permissions, show a helpful modal with steps and a button to open Settings (use `PermissionsModal` or `Linking.openSettings()`).
-  - [ ] Add thumbnails in a `Gallery` component (local-only) and expose an `Export` action to share PNG files.
-  - [ ] Add tests for `strokesToSVG` and rasterization helper functions.
+  - [x] Add fallback UX: if `saveToGallery` fails due to permissions, show a helpful modal with steps and a button to open Settings (use `PermissionsModal` or `Linking.openSettings()`).
+  - [x] Add thumbnails in a `Gallery` component (local-only) and expose an `Export` action to share PNG files.
+  - [x] Add tests for `strokesToSVG` and rasterization helper functions (unit tests for `doodleRaster` and related helpers are present).
 
 - **Calming Sounds — Background Audio**
 
@@ -151,7 +157,8 @@ For each partially or not implemented item below are precise, technical steps to
 
 - **Centralized Permissions Screen**
   - [ ] Create `app/(settings)/Permissions.tsx` listing required permissions with current statuses and request buttons.
-  - [ ] Use `expo-permissions` or direct module calls to check and request permissions and fall back to `Linking.openSettings()` when denied.
+  - [x] Create `app/(settings)/Permissions.tsx` listing required permissions with current statuses and request buttons.
+  - [x] Use `expo-permissions` or direct module calls to check and request permissions and fall back to `Linking.openSettings()` when denied.
 
 ---
 
@@ -182,7 +189,7 @@ If you want, I'll start by implementing the proactive notification enablement UI
 
   - Notification delivery timing and behavior must be validated on real devices (both Android and iOS). Some platforms differ on repeated triggers and background delivery.
   - Full device-lock (Baby Mode) parity on iOS may require native modules or dev-client builds; current implementation relies on React Native primitives and in-app PIN gating only.
-  - SVG-to-PNG rasterization for doodles is not implemented; conversion strategies vary by platform and may require native rendering or a lightweight server-side helper.
+  - SVG-to-PNG rasterization for doodles: IN-PROGRESS — a WebView-based converter component was added (`components/SVGToPNGWebView.tsx`) and `utils/doodleRaster.ts` includes guidance for a UI-driven conversion flow. Full native-quality rasterization is still pending and may require native libraries or server-side conversion for highest fidelity.
 
 - Recommended next steps (prioritized):
   1. Run on-device verification for scheduled notifications (pre-notice and main notice) on typical Android and iOS devices and confirm timing and repeat behaviors.
