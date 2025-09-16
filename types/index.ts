@@ -21,6 +21,8 @@ export interface ScheduledSession {
   repeat: 'none' | 'once' | 'daily' | 'weekdays' | 'custom';
   enabled: boolean;
   notificationId?: string;
+  // optional id for the pre-notification that fires a short time before the session
+  preNotificationId?: string;
   days?: number[];
 }
 

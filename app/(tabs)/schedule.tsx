@@ -15,7 +15,9 @@ import { Colors } from '@/constants/Colors';
 import { ScheduledSession } from '@/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { buildNotificationTrigger } from '@/utils/scheduleUtils';
+import { buildNotificationTrigger, buildPreNotificationTrigger } from '@/utils/scheduleUtils';
+import PermissionsModal from '@/components/PermissionsModal';
+import WeekdaySelector from '@/components/WeekdaySelector';
 
 const SESSIONS_KEY = 'scheduledSessions';
 
@@ -32,6 +34,16 @@ export default function ScheduleScreen() {
         console.error('Error loading scheduled sessions', e);
       }
     })();
+
+    // determine notification permission state for header UI
+    (async () => {
+      try {
+        const p = await Notifications.getPermissionsAsync();
+        setNotifStatus(p.status || 'unknown');
+      } catch (e) {
+        setNotifStatus('unknown');
+      }
+    })();
   }, []);
 
   React.useEffect(() => {
@@ -43,11 +55,40 @@ export default function ScheduleScreen() {
 
   const scheduleNotificationForSession = async (session: ScheduledSession) => {
     try {
+      // Ensure we have permission before scheduling
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        // Prompt permissions request
+        const req = await Notifications.requestPermissionsAsync();
+        if (req.status !== 'granted') {
+          // Permission denied — throw so callers can show friendly UI
+          throw new Error('notification-permission-denied');
+        }
+      }
       // Parse HH:mm to a Date for next occurrence
       const trigger: any = buildNotificationTrigger(
         session.time,
-        session.repeat
+        session.repeat,
+        undefined,
+        session.days
       );
+
+      // also schedule a pre-notification (5 minutes before)
+      const preTrigger: any = buildPreNotificationTrigger(
+        session.time,
+        session.repeat,
+        undefined,
+        session.days,
+        5
+      );
+
+      const preId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Upcoming Nothing Session',
+          body: `Starting in 5 minutes: ${session.duration} minute session.`,
+        },
+        trigger: preTrigger,
+      });
 
       const identifier = await Notifications.scheduleNotificationAsync({
         content: {
@@ -57,7 +98,7 @@ export default function ScheduleScreen() {
         trigger,
       });
 
-      return identifier;
+      return { id: identifier, preId };
     } catch (e) {
       console.error('Failed to schedule notification', e);
       return null;
@@ -76,31 +117,44 @@ export default function ScheduleScreen() {
   const durations = [5, 15, 30, 60];
   const times = ['07:00', '12:00', '18:00', '21:00'];
 
+  const [notifStatus, setNotifStatus] = React.useState<string>('unknown');
+
   const addSession = () => {
-    Alert.alert('Schedule Session', 'Choose session details', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Add',
-        onPress: () => {
-          const newSession: ScheduledSession = {
-            id: Date.now().toString(),
-            time: times[Math.floor(Math.random() * times.length)],
-            duration: durations[Math.floor(Math.random() * durations.length)],
-            repeat: Math.random() > 0.5 ? 'daily' : 'once',
-            enabled: true,
-          };
-          (async () => {
-            const id = await scheduleNotificationForSession(newSession);
-            newSession.notificationId = id || undefined;
-            setSessions((prev) => [...prev, newSession]);
-          })();
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        },
-      },
-    ]);
+    // Show inline creation sheet
+    setCreating(true);
+  };
+
+  const [creating, setCreating] = React.useState(false);
+  const [createRepeat, setCreateRepeat] =
+    React.useState<ScheduledSession['repeat']>('once');
+  const [createDays, setCreateDays] = React.useState<number[]>([]);
+
+  const finishCreate = async () => {
+    const newSession: ScheduledSession = {
+      id: Date.now().toString(),
+      time: times[Math.floor(Math.random() * times.length)],
+      duration: durations[Math.floor(Math.random() * durations.length)],
+      repeat: createRepeat,
+      enabled: true,
+      days: createRepeat === 'custom' ? createDays : undefined,
+    };
+
+    try {
+      const ids = await scheduleNotificationForSession(newSession);
+      if (ids) {
+        newSession.notificationId = (ids as any).id || undefined;
+        newSession.preNotificationId = (ids as any).preId || undefined;
+      }
+      setSessions((prev) => [...prev, newSession]);
+      setCreating(false);
+      setCreateRepeat('once');
+      setCreateDays([]);
+    } catch (err: any) {
+      if (err?.message === 'notification-permission-denied') {
+        setShowPermissionModal(true);
+      }
+      console.error('create session failed', err);
+    }
   };
 
   const toggleSession = (id: string) => {
@@ -111,11 +165,23 @@ export default function ScheduleScreen() {
         // cancel or schedule notification accordingly
         if (!updated.enabled) {
           cancelNotification(updated.notificationId).catch(() => null);
+          cancelNotification(updated.preNotificationId).catch(() => null);
           updated.notificationId = undefined;
+          updated.preNotificationId = undefined;
         } else {
           (async () => {
-            const nid = await scheduleNotificationForSession(updated);
-            updated.notificationId = nid || undefined;
+            try {
+              const ids = await scheduleNotificationForSession(updated);
+              if (ids) {
+                updated.notificationId = (ids as any).id || undefined;
+                updated.preNotificationId = (ids as any).preId || undefined;
+              }
+            } catch (err: any) {
+              if (err?.message === 'notification-permission-denied') {
+                setShowPermissionModal(true);
+                updated.enabled = false;
+              }
+            }
           })();
         }
         return updated;
@@ -124,10 +190,14 @@ export default function ScheduleScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  const [showPermissionModal, setShowPermissionModal] = React.useState(false);
+
   const deleteSession = (id: string) => {
     const toDelete = sessions.find((s) => s.id === id);
     if (toDelete?.notificationId)
       cancelNotification(toDelete.notificationId).catch(() => null);
+    if (toDelete?.preNotificationId)
+      cancelNotification(toDelete.preNotificationId).catch(() => null);
     setSessions((prev) => prev.filter((session) => session.id !== id));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
@@ -141,21 +211,121 @@ export default function ScheduleScreen() {
     React.createElement(
       ScrollView,
       { style: styles.content },
+      creating &&
+        React.createElement(
+          View,
+          { style: styles.createSheet },
+          React.createElement(
+            Text,
+            { style: styles.createTitle },
+            'New Session'
+          ),
+          React.createElement(
+            View,
+            { style: { flexDirection: 'row', gap: 8, marginTop: 8 } },
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [
+                  styles.smallBtn,
+                  createRepeat === 'once' ? styles.primarySmall : null,
+                ],
+                onPress: () => setCreateRepeat('once'),
+              },
+              React.createElement(Text, null, 'Once')
+            ),
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [
+                  styles.smallBtn,
+                  createRepeat === 'daily' ? styles.primarySmall : null,
+                ],
+                onPress: () => setCreateRepeat('daily'),
+              },
+              React.createElement(Text, null, 'Daily')
+            ),
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [
+                  styles.smallBtn,
+                  createRepeat === 'weekdays' ? styles.primarySmall : null,
+                ],
+                onPress: () => setCreateRepeat('weekdays'),
+              },
+              React.createElement(Text, null, 'Weekdays')
+            ),
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [
+                  styles.smallBtn,
+                  createRepeat === 'custom' ? styles.primarySmall : null,
+                ],
+                onPress: () => setCreateRepeat('custom'),
+              },
+              React.createElement(Text, null, 'Custom')
+            )
+          ),
+          createRepeat === 'custom' &&
+            React.createElement(WeekdaySelector, {
+              selected: createDays,
+              onChange: (d: number[]) => setCreateDays(d),
+            }),
+          React.createElement(
+            View,
+            { style: { flexDirection: 'row', marginTop: 12, gap: 8 } },
+            React.createElement(
+              TouchableOpacity,
+              { style: styles.smallBtn, onPress: () => setCreating(false) },
+              React.createElement(Text, null, 'Cancel')
+            ),
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [styles.smallBtn, styles.primarySmall],
+                onPress: finishCreate,
+              },
+              React.createElement(Text, null, 'Create')
+            )
+          )
+        ),
       React.createElement(
         View,
         { style: styles.header },
         React.createElement(Text, { style: styles.title }, 'Nothing Scheduler'),
         React.createElement(
-          TouchableOpacity,
-          { style: styles.addButton, onPress: addSession },
-          React.createElement(Plus, {
-            size: 20,
-            color: Colors.personal.background,
-          }),
+          View,
+          { style: { flexDirection: 'row', gap: 8 } },
+          notifStatus !== 'granted' &&
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [styles.smallBtn, { marginRight: 8 }],
+                onPress: async () => {
+                  const r = await Notifications.requestPermissionsAsync();
+                  setNotifStatus(r.status || 'unknown');
+                },
+              },
+              React.createElement(
+                Text,
+                { style: { color: Colors.common.white } },
+                'Enable Notifications'
+              )
+            ),
           React.createElement(
-            Text,
-            { style: styles.addButtonText },
-            'Add Session'
+            TouchableOpacity,
+            { style: styles.addButton, onPress: addSession },
+            React.createElement(Plus, {
+              size: 20,
+              color: Colors.personal.background,
+            }),
+            React.createElement(
+              Text,
+              { style: styles.addButtonText },
+              'Add Session'
+            )
           )
         )
       ),
@@ -221,6 +391,14 @@ export default function ScheduleScreen() {
                 React.createElement(
                   View,
                   { style: styles.sessionActions },
+                  showPermissionModal &&
+                    React.createElement(PermissionsModal, {
+                      visible: showPermissionModal,
+                      title: 'Notification permission required',
+                      message:
+                        'Scheduling requires notifications permission. Please enable notifications in Settings.',
+                      onRequestClose: () => setShowPermissionModal(false),
+                    }),
                   React.createElement(
                     TouchableOpacity,
                     {
@@ -378,5 +556,27 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 8,
+  },
+  createSheet: {
+    backgroundColor: Colors.personal.surface,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+  },
+  createTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.personal.text,
+  },
+  smallBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.personal.background,
+    borderWidth: 1,
+    borderColor: Colors.personal.border,
+  },
+  primarySmall: {
+    backgroundColor: Colors.personal.accent,
   },
 });

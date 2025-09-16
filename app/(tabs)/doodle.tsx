@@ -26,6 +26,10 @@ export default function DoodleScreen() {
   const [strokes, setStrokes] = useState<DoodleStroke[]>([]);
   const [currentColor, setCurrentColor] = useState(Colors.personal.accent);
   const [strokeWidth, setStrokeWidth] = useState(3);
+  const [banner, setBanner] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
   // Premium gating: only premium users get full palette and brush styles
   const colors = isPremium
@@ -132,10 +136,19 @@ export default function DoodleScreen() {
                     // Try to save to gallery, fallback to share
                     try {
                       await saveToGallery(fileUri);
-                      Alert.alert('Saved', 'Doodle saved to your gallery.');
+                      setBanner({
+                        type: 'success',
+                        text: 'Doodle saved to your gallery.',
+                      });
+                      setTimeout(() => setBanner(null), 2500);
                     } catch (e) {
                       // If gallery save fails, attempt share
                       await shareFile(fileUri);
+                      setBanner({
+                        type: 'success',
+                        text: 'Doodle ready to share.',
+                      });
+                      setTimeout(() => setBanner(null), 2500);
                     }
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -146,6 +159,11 @@ export default function DoodleScreen() {
                       err?.message ||
                         'An error occurred while saving the doodle.'
                     );
+                    setBanner({
+                      type: 'error',
+                      text: 'Save failed. Check permissions.',
+                    });
+                    setTimeout(() => setBanner(null), 2500);
                   }
                 }}
               >
@@ -174,6 +192,25 @@ export default function DoodleScreen() {
             Premium!
           </Text>
           {/* You can add a PremiumModal or upgrade button here */}
+        </View>
+      )}
+      {banner && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 20,
+            left: 20,
+            right: 20,
+            padding: 12,
+            borderRadius: 10,
+            backgroundColor:
+              banner.type === 'success'
+                ? Colors.personal.accent
+                : Colors.common.error,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: Colors.common.white }}>{banner.text}</Text>
         </View>
       )}
     </SafeAreaView>

@@ -112,6 +112,40 @@ export function buildNotificationTrigger(
   return { date: next } as any;
 }
 
+/**
+ * Compute a trigger that fires `offsetMinutes` before the main trigger.
+ * For repeating daily triggers we return an object with repeats and hour/minute
+ * adjusted by the offset. For absolute date triggers we return a Date offset by minutes.
+ */
+export function buildPreNotificationTrigger(
+  time: string,
+  repeat: ScheduledSession['repeat'],
+  from?: Date,
+  days?: number[],
+  offsetMinutes = 5
+) {
+  const [hh, mm] = time.split(':').map((s) => parseInt(s, 10));
+
+  if (repeat === 'daily') {
+    // compute hour/minute minus offsetMinutes, delegating to Date math for borrow
+    const d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    d.setMinutes(d.getMinutes() - offsetMinutes);
+    return { hour: d.getHours(), minute: d.getMinutes(), repeats: true } as any;
+  }
+
+  if (repeat === 'custom') {
+    const next = getNextOccurrence(time, repeat, from, days);
+    const pre = new Date(next.getTime() - offsetMinutes * 60 * 1000);
+    return { date: pre } as any;
+  }
+
+  // weekdays and once/none -> absolute date offset by minutes
+  const next = getNextOccurrence(time, repeat, from, days);
+  const pre = new Date(next.getTime() - offsetMinutes * 60 * 1000);
+  return { date: pre } as any;
+}
+
 export default {
   getNextOccurrence,
   buildNotificationTrigger,

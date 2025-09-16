@@ -216,7 +216,30 @@ export default function FocusScreen() {
       completed,
     };
 
-    setSessionHistory((prev) => [newSession, ...prev].slice(0, 10)); // Keep last 10 sessions
+    setSessionHistory((prev) => {
+      const updated = [newSession, ...prev].slice(0, 50); // keep last 50 locally
+      // persist to AsyncStorage as full FocusSession records
+      (async () => {
+        try {
+          const FOCUS_SESSIONS_KEY = 'focusSessions';
+          const raw = await AsyncStorage.getItem(FOCUS_SESSIONS_KEY);
+          let stored: any[] = raw ? JSON.parse(raw) : [];
+          stored.unshift({
+            id: Date.now().toString(),
+            duration: selectedDuration,
+            startTime: new Date().toISOString(),
+            completed,
+          });
+          // keep last 100
+          stored = stored.slice(0, 100);
+          await AsyncStorage.setItem(FOCUS_SESSIONS_KEY, JSON.stringify(stored));
+        } catch (e) {
+          console.error('Failed to persist focus session', e);
+        }
+      })();
+
+      return updated;
+    }); // Keep last 50 sessions locally
   };
 
   const stopSession = async () => {
