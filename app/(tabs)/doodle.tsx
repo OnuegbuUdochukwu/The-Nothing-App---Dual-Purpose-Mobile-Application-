@@ -30,6 +30,7 @@ export default function DoodleScreen() {
     type: 'success' | 'error';
     text: string;
   } | null>(null);
+  const canvasRef = React.useRef(null);
 
   // Premium gating: only premium users get full palette and brush styles
   const colors = isPremium
@@ -129,26 +130,64 @@ export default function DoodleScreen() {
                       );
                       return;
                     }
-
-                    const svg = strokesToSVG(strokes, 1080, 1080);
-                    const fileUri = await saveSVGToFile(svg);
-
-                    // Try to save to gallery, fallback to share
+                    // Try PNG-first by capturing the canvas view. Use lazy require so devs
+                    // without the native dependency don't crash at load-time.
+                    let pngUri: string | null = null;
                     try {
-                      await saveToGallery(fileUri);
-                      setBanner({
-                        type: 'success',
-                        text: 'Doodle saved to your gallery.',
-                      });
-                      setTimeout(() => setBanner(null), 2500);
-                    } catch (e) {
-                      // If gallery save fails, attempt share
-                      await shareFile(fileUri);
-                      setBanner({
-                        type: 'success',
-                        text: 'Doodle ready to share.',
-                      });
-                      setTimeout(() => setBanner(null), 2500);
+                      // eslint-disable-next-line @typescript-eslint/no-var-requires
+                      const {
+                        captureCanvasAsPNG,
+                      } = require('@/utils/doodleRaster');
+                      pngUri = await captureCanvasAsPNG(
+                        canvasRef.current,
+                        `doodle-${Date.now()}.png`,
+                        { width: 1080, height: 1080 }
+                      );
+                    } catch (pngErr) {
+                      // PNG capture failed; fall back to SVG export
+                      console.warn(
+                        'PNG capture failed, falling back to SVG',
+                        pngErr
+                      );
+                    }
+
+                    if (pngUri) {
+                      try {
+                        await saveToGallery(pngUri);
+                        setBanner({
+                          type: 'success',
+                          text: 'Doodle saved to your gallery.',
+                        });
+                        setTimeout(() => setBanner(null), 2500);
+                      } catch (e) {
+                        await shareFile(pngUri);
+                        setBanner({
+                          type: 'success',
+                          text: 'Doodle ready to share.',
+                        });
+                        setTimeout(() => setBanner(null), 2500);
+                      }
+                    } else {
+                      const svg = strokesToSVG(strokes, 1080, 1080);
+                      const fileUri = await saveSVGToFile(svg);
+
+                      // Try to save to gallery, fallback to share
+                      try {
+                        await saveToGallery(fileUri);
+                        setBanner({
+                          type: 'success',
+                          text: 'Doodle saved to your gallery.',
+                        });
+                        setTimeout(() => setBanner(null), 2500);
+                      } catch (e) {
+                        // If gallery save fails, attempt share
+                        await shareFile(fileUri);
+                        setBanner({
+                          type: 'success',
+                          text: 'Doodle ready to share.',
+                        });
+                        setTimeout(() => setBanner(null), 2500);
+                      }
                     }
 
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -181,6 +220,8 @@ export default function DoodleScreen() {
         strokeWidth={strokeWidth}
         onStrokeComplete={handleStrokeComplete}
         backgroundColor={Colors.personal.background}
+        // forward ref to allow the parent to capture the view
+        ref={canvasRef}
       />
       {/* Premium upsell for free users */}
       {!isPremium && (

@@ -11,6 +11,7 @@
 - ### Adult Doodle Pad
   - **Status:** Partially Implemented
   - **Notes:** The canvas and basic free-tier behavior are implemented (`app/(tabs)/doodle.tsx`, `components/DrawingCanvas.tsx`). Premium save/export via `utils/doodleExport.ts` exists (SVG). Missing: PNG rasterization, richer brushes, and thumbnails. Save UX now includes a transient banner but needs edge-case handling for permission denial.
+  - **Update:** PNG rasterization work started. Canvas now exposes a ref and the save flow attempts PNG capture first using `utils/doodleRaster.ts` (requires `react-native-view-shot` at runtime). If PNG capture fails the system falls back to SVG export. Thumbnails and gallery storage are next.
 
 ---
 

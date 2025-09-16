@@ -15,23 +15,29 @@ interface DrawingCanvasProps {
   backgroundColor?: string;
 }
 
-export default function DrawingCanvas({
-  strokes,
-  currentColor,
-  strokeWidth,
-  onStrokeComplete,
-  backgroundColor = '#ffffff'
-}: DrawingCanvasProps) {
-  const [currentStroke, setCurrentStroke] = useState<{ x: number; y: number }[]>([]);
+// Forward ref so parent can capture the view (for PNG rasterization)
+const DrawingCanvas = React.forwardRef(function DrawingCanvas(
+  {
+    strokes,
+    currentColor,
+    strokeWidth,
+    onStrokeComplete,
+    backgroundColor = '#ffffff',
+  }: DrawingCanvasProps,
+  ref: any
+) {
+  const [currentStroke, setCurrentStroke] = useState<
+    { x: number; y: number }[]
+  >([]);
 
   const onGestureEvent = (event: any) => {
     const { x, y } = event.nativeEvent;
-    setCurrentStroke(prev => [...prev, { x, y }]);
+    setCurrentStroke((prev) => [...prev, { x, y }]);
   };
 
   const onHandlerStateChange = (event: any) => {
     const { state } = event.nativeEvent;
-    
+
     if (state === State.BEGAN) {
       const { x, y } = event.nativeEvent;
       setCurrentStroke([{ x, y }]);
@@ -41,7 +47,7 @@ export default function DrawingCanvas({
           id: Date.now().toString(),
           points: currentStroke,
           color: currentColor,
-          width: strokeWidth
+          width: strokeWidth,
         };
         onStrokeComplete(stroke);
         setCurrentStroke([]);
@@ -51,7 +57,7 @@ export default function DrawingCanvas({
 
   const createPath = (points: { x: number; y: number }[]) => {
     if (points.length < 2) return '';
-    
+
     let path = `M${points[0].x},${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
       path += ` L${points[i].x},${points[i].y}`;
@@ -64,7 +70,7 @@ export default function DrawingCanvas({
       onGestureEvent={onGestureEvent}
       onHandlerStateChange={onHandlerStateChange}
     >
-      <View style={[styles.canvas, { backgroundColor }]}>
+      <View ref={ref} style={[styles.canvas, { backgroundColor }]}>
         <Svg width={width} height={height - 200}>
           {strokes.map((stroke) => (
             <Path
@@ -91,7 +97,9 @@ export default function DrawingCanvas({
       </View>
     </PanGestureHandler>
   );
-}
+});
+
+export default DrawingCanvas;
 
 const styles = StyleSheet.create({
   canvas: {
