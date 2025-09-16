@@ -15,7 +15,13 @@ export default function WellnessInsights() {
 
       // compute week starting this week's Sunday UTC
       const now = new Date();
-      const weekStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - now.getUTCDay()));
+      const weekStart = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate() - now.getUTCDay()
+        )
+      );
       const wt = await wellnessService.getTotalForWeek(weekStart);
       setWeekTotal(wt);
     })();
@@ -46,7 +52,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '100%',
   },
-  header: { fontSize: 18, fontWeight: '700', color: Colors.personal.text, marginBottom: 12 },
+  header: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.personal.text,
+    marginBottom: 12,
+  },
   card: { marginBottom: 12 },
   label: { fontSize: 12, color: Colors.personal.textSecondary },
   value: { fontSize: 20, fontWeight: '700', color: Colors.personal.text },

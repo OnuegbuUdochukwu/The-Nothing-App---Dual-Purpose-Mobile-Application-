@@ -96,11 +96,11 @@
 
 For each partially or not implemented item below are precise, technical steps to complete the work. Each step is actionable and small enough to implement in a single PR.
 
-  - [x] Add data model: create a `focusSessions` store persisted in AsyncStorage (or extend existing storage) that records session `id`, `startTime`, `duration`, `completed`.
-  - [x] Implement aggregation utilities in `utils/insights.ts`: totalPerDay(dateRange), totalPerWeek(weekStart), totalPerMonth(monthStart).
-  - [x] Create UI component `components/WellnessInsights.tsx` that renders a weekly chart (use lightweight chart lib or simple SVG) and a streak counter.
-  - [x] Wire data fetching in `components/WellnessInsights.tsx` to the persisted store and the aggregation utilities.
-  - [x] Add unit tests for aggregation utilities (`__tests__/insights.test.ts`).
+- [x] Add data model: create a `focusSessions` store persisted in AsyncStorage (or extend existing storage) that records session `id`, `startTime`, `duration`, `completed`.
+- [x] Implement aggregation utilities in `utils/insights.ts`: totalPerDay(dateRange), totalPerWeek(weekStart), totalPerMonth(monthStart).
+- [x] Create UI component `components/WellnessInsights.tsx` that renders a weekly chart (use lightweight chart lib or simple SVG) and a streak counter.
+- [x] Wire data fetching in `components/WellnessInsights.tsx` to the persisted store and the aggregation utilities.
+- [x] Add unit tests for aggregation utilities (`__tests__/insights.test.ts`).
 
 - **Scheduler — Pre-notification & Reliability**
 
