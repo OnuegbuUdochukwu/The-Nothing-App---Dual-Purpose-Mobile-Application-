@@ -13,7 +13,9 @@ jest.mock('expo-notifications', () => ({
 
 const AsyncStorage = require('@react-native-async-storage/async-storage');
 const Notifications = require('expo-notifications');
-const { reschedulePersistedSessions } = require('../utils/notificationScheduler');
+const {
+  reschedulePersistedSessions,
+} = require('../utils/notificationScheduler');
 
 describe('reschedulePersistedSessions', () => {
   beforeEach(() => {
@@ -29,13 +31,17 @@ describe('reschedulePersistedSessions', () => {
       enabled: true,
     };
 
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify([session]));
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      JSON.stringify([session])
+    );
 
     // mock scheduleNotificationAsync to return incremental ids
     let counter = 1;
-    (Notifications.scheduleNotificationAsync as jest.Mock).mockImplementation(async () => {
-      return `id-${counter++}`;
-    });
+    (Notifications.scheduleNotificationAsync as jest.Mock).mockImplementation(
+      async () => {
+        return `id-${counter++}`;
+      }
+    );
 
     const scheduled = await reschedulePersistedSessions(7);
     expect(scheduled).toBeGreaterThanOrEqual(1);
@@ -53,7 +59,9 @@ describe('reschedulePersistedSessions', () => {
       repeat: 'once',
       enabled: false,
     };
-    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify([session]));
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+      JSON.stringify([session])
+    );
 
     const scheduled = await reschedulePersistedSessions(7);
     expect(scheduled).toBe(0);

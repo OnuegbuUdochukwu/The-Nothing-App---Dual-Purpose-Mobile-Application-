@@ -15,6 +15,7 @@
 ---
 
 - ### Nothing Scheduler
+
   - **Status:** Partially Implemented
   - **Notes:** Core scheduling, persistence and notification trigger logic implemented (`app/(tabs)/schedule.tsx`, `utils/scheduleUtils.ts`). Added permission modal and custom-weekday selector UI in the last pass. Remaining: pre-emptive permission prompt, testing delivery behavior on real devices, and pre-notification (5-min warning) reliability.
 
@@ -26,8 +27,11 @@
 ---
 
 - ### Wellness Insights
-  - **Status:** Not Implemented
-  - **Notes:** No dashboard UI or aggregation logic detected. `ParentalDashboard` reads some session history but is not a full Insights feature.
+  - **Status:** Fully Implemented (utilities + minimal UI). Recommend: enhance the UI with charts and polish.
+  - **Update:** Wellness Insights utilities and minimal UI implemented.
+    - Files added: `utils/wellnessService.ts`, `components/WellnessInsights.tsx`.
+    - Tests added: `__tests__/wellnessService.test.ts`, `__tests__/insights.test.ts` (existing).
+    - Validation: aggregation utilities and wellness service tests pass locally. UI is minimal and can be expanded with charts.
 
 ---
 
@@ -92,13 +96,11 @@
 
 For each partially or not implemented item below are precise, technical steps to complete the work. Each step is actionable and small enough to implement in a single PR.
 
-- **Wellness Insights Dashboard**
-
-  - [ ] Add data model: create a `focusSessions` store persisted in AsyncStorage (or extend existing storage) that records session `id`, `startTime`, `duration`, `completed`.
-  - [ ] Implement aggregation utilities in `utils/insights.ts`: totalPerDay(dateRange), totalPerWeek(weekStart), totalPerMonth(monthStart).
-  - [ ] Create UI component `components/WellnessInsights.tsx` that renders a weekly chart (use lightweight chart lib or simple SVG) and a streak counter.
-  - [ ] Wire data fetching in `components/WellnessInsights.tsx` to the persisted store and the aggregation utilities.
-  - [ ] Add unit tests for aggregation utilities (`__tests__/insights.test.ts`).
+  - [x] Add data model: create a `focusSessions` store persisted in AsyncStorage (or extend existing storage) that records session `id`, `startTime`, `duration`, `completed`.
+  - [x] Implement aggregation utilities in `utils/insights.ts`: totalPerDay(dateRange), totalPerWeek(weekStart), totalPerMonth(monthStart).
+  - [x] Create UI component `components/WellnessInsights.tsx` that renders a weekly chart (use lightweight chart lib or simple SVG) and a streak counter.
+  - [x] Wire data fetching in `components/WellnessInsights.tsx` to the persisted store and the aggregation utilities.
+  - [x] Add unit tests for aggregation utilities (`__tests__/insights.test.ts`).
 
 - **Scheduler — Pre-notification & Reliability**
 

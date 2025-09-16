@@ -17,11 +17,23 @@ export async function scheduleSessionNotifications(session: ScheduledSession) {
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') {
     const req = await Notifications.requestPermissionsAsync();
-    if (req.status !== 'granted') throw new Error('notification-permission-denied');
+    if (req.status !== 'granted')
+      throw new Error('notification-permission-denied');
   }
 
-  const trigger: any = buildNotificationTrigger(session.time, session.repeat, undefined, session.days);
-  const preTrigger: any = buildPreNotificationTrigger(session.time, session.repeat, undefined, session.days, 5);
+  const trigger: any = buildNotificationTrigger(
+    session.time,
+    session.repeat,
+    undefined,
+    session.days
+  );
+  const preTrigger: any = buildPreNotificationTrigger(
+    session.time,
+    session.repeat,
+    undefined,
+    session.days,
+    5
+  );
 
   const preId = await Notifications.scheduleNotificationAsync({
     content: {
@@ -47,8 +59,14 @@ export async function scheduleSessionNotifications(session: ScheduledSession) {
  */
 export async function cancelSessionNotifications(session: ScheduledSession) {
   try {
-    if (session.notificationId) await Notifications.cancelScheduledNotificationAsync(session.notificationId);
-    if (session.preNotificationId) await Notifications.cancelScheduledNotificationAsync(session.preNotificationId);
+    if (session.notificationId)
+      await Notifications.cancelScheduledNotificationAsync(
+        session.notificationId
+      );
+    if (session.preNotificationId)
+      await Notifications.cancelScheduledNotificationAsync(
+        session.preNotificationId
+      );
   } catch (e) {
     console.error('Failed to cancel session notifications', e);
   }
@@ -77,8 +95,14 @@ export async function reschedulePersistedSessions(daysAhead = 7) {
 
       // cancel prior notifications if any
       try {
-        if (s.notificationId) await Notifications.cancelScheduledNotificationAsync(s.notificationId);
-        if (s.preNotificationId) await Notifications.cancelScheduledNotificationAsync(s.preNotificationId);
+        if (s.notificationId)
+          await Notifications.cancelScheduledNotificationAsync(
+            s.notificationId
+          );
+        if (s.preNotificationId)
+          await Notifications.cancelScheduledNotificationAsync(
+            s.preNotificationId
+          );
       } catch (e) {
         // ignore cancel errors
       }
