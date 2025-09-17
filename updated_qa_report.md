@@ -85,7 +85,6 @@ Long-term
 
 If you want, I can now proceed to run a complete `npx expo upgrade` in a new branch, run the tests, and prepare a PR with the upgrade changes and any small code adaptions required.
 
-
 ## Adult Mode (Personal)
 
 | Feature                                | Status         | Notes                                                                                                                                 |

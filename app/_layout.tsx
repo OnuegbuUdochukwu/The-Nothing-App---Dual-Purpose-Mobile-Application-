@@ -18,9 +18,9 @@ export default function RootLayout() {
       React.createElement(
         Stack,
         { screenOptions: { headerShown: false } },
-        React.createElement(Stack.Screen, { name: "+not-found" })
+        React.createElement(Stack.Screen, { name: '+not-found' })
       ),
-      React.createElement(StatusBar, { style: "auto" })
+      React.createElement(StatusBar, { style: 'auto' })
     )
   );
 }
