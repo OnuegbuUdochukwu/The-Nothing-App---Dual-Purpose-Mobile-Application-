@@ -17,6 +17,9 @@ const Text = makeComponent('Text');
 const Image = makeComponent('Image');
 const ActivityIndicator = makeComponent('ActivityIndicator');
 
+const ScrollView = ({ children, ...props }) =>
+  React.createElement('ScrollView', props, children);
+
 const FlatList = ({ data = [], renderItem, keyExtractor }) =>
   React.createElement(
     'FlatList',
@@ -55,11 +58,18 @@ module.exports = {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
+  ScrollView,
   Alert,
   NativeModules,
   Platform: {
     OS: 'ios',
     select: (obj) => (obj.ios ? obj.ios : obj.default),
+  },
+  Dimensions: {
+    get: (dim) => {
+      if (dim === 'window') return { width: 375, height: 667 };
+      return { width: 0, height: 0 };
+    },
   },
   StyleSheet: {
     create: (styles) => styles,
