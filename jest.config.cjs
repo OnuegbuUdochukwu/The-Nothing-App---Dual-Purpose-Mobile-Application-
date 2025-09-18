@@ -12,6 +12,7 @@ module.exports = {
   },
   setupFilesAfterEnv: ['<rootDir>/jest-setup.ts'],
   transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@react-navigation|@react-native-async-storage)/)',
+    // Allow transforming packages that ship ESM/TS source (expo and expo-modules-core used by jest-expo)
+    'node_modules/(?!(react-native|@react-native|@react-navigation|@react-native-async-storage|expo-modules-core|expo)/)',
   ],
 };

@@ -8,4 +8,7 @@ const NativeModules = {
   UIManager: {},
 };
 
+// Export both CommonJS and a `.default` property because some consumers
+// (e.g. jest-expo setup) require the module and access `.default`.
 module.exports = NativeModules;
+module.exports.default = NativeModules;
