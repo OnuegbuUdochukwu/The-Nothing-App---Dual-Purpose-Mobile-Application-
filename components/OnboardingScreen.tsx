@@ -9,55 +9,73 @@ interface OnboardingScreenProps {
   onModeSelect: (mode: AppMode) => void;
 }
 
-export default function OnboardingScreen({ onModeSelect }: OnboardingScreenProps) {
+export default function OnboardingScreen({
+  onModeSelect,
+}: OnboardingScreenProps) {
   return React.createElement(
     LinearGradient,
     {
       colors: ['#000000', '#1a1a1a'],
-      style: styles.container
+      style: styles.container,
     },
     React.createElement(
-      View, 
+      View,
       { style: styles.content },
-      React.createElement(Text, { style: styles.title }, "Welcome to Nothing"),
-      React.createElement(Text, { style: styles.subtitle }, "Choose your experience"),
-      
+      React.createElement(Text, { style: styles.title }, 'Welcome to Nothing'),
       React.createElement(
-        View, 
+        Text,
+        { style: styles.subtitle },
+        'Choose your experience'
+      ),
+
+      React.createElement(
+        View,
         { style: styles.modesContainer },
         React.createElement(
-          TouchableOpacity, 
+          TouchableOpacity,
           {
             style: [styles.modeCard, styles.personalCard],
             onPress: () => onModeSelect('personal'),
-            activeOpacity: 0.8
+            activeOpacity: 0.8,
           },
-          React.createElement(User, { size: 48, color: Colors.personal.accent }),
-          React.createElement(Text, { style: styles.modeTitle }, "Personal Mode"),
+          React.createElement(User, {
+            size: 48,
+            color: Colors.personal.accent,
+          }),
           React.createElement(
-            Text, 
+            Text,
+            { style: styles.modeTitle },
+            'Personal Mode'
+          ),
+          React.createElement(
+            Text,
             { style: styles.modeDescription },
-            "Focus, wellness, and distraction-free time"
+            'Focus, wellness, and distraction-free time'
           )
         ),
 
         React.createElement(
-          TouchableOpacity, 
+          TouchableOpacity,
           {
             style: [styles.modeCard, styles.babyCard],
             onPress: () => onModeSelect('baby'),
-            activeOpacity: 0.8
+            activeOpacity: 0.8,
           },
           React.createElement(Baby, { size: 48, color: Colors.baby.blue }),
           React.createElement(
-            Text, 
+            Text,
             { style: [styles.modeTitle, { color: Colors.baby.text }] },
-            "Baby Mode"
+            'Baby Mode'
           ),
           React.createElement(
-            Text, 
-            { style: [styles.modeDescription, { color: Colors.baby.textSecondary }] },
-            "Safe digital space for little ones"
+            Text,
+            {
+              style: [
+                styles.modeDescription,
+                { color: Colors.baby.textSecondary },
+              ],
+            },
+            'Safe digital space for little ones'
           )
         )
       )

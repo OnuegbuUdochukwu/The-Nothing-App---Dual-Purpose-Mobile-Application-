@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import wellnessService from '@/utils/wellnessService';
+import { getStreak, getTotalForWeek } from '@/utils/wellnessService';
 import { Colors } from '@/constants/Colors';
 
 export default function WellnessInsights() {
@@ -10,7 +10,7 @@ export default function WellnessInsights() {
 
   useEffect(() => {
     (async () => {
-      const s = await wellnessService.getStreak(new Date());
+      const s = await getStreak(new Date());
       setStreak(s);
 
       // compute week starting this week's Sunday UTC
@@ -22,7 +22,7 @@ export default function WellnessInsights() {
           now.getUTCDate() - now.getUTCDay()
         )
       );
-      const wt = await wellnessService.getTotalForWeek(weekStart);
+      const wt = await getTotalForWeek(weekStart);
       setWeekTotal(wt);
     })();
   }, []);

@@ -1,8 +1,15 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { User, Baby, Palette, Bell, Shield, Info, LogOut, Crown } from 'lucide-react-native';
+import { User, Baby, Bell, Shield, Info, Crown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppMode } from '@/hooks/useAppMode';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -12,7 +19,7 @@ import PremiumModal from '@/components/PremiumModal';
 
 export default function SettingsScreen() {
   const { mode, saveMode } = useAppMode();
-  const { isPremium, setPremiumStatus } = useSubscription();
+  const { isPremium } = useSubscription();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const isPersonalMode = mode === 'personal';
@@ -21,21 +28,17 @@ export default function SettingsScreen() {
   const switchMode = () => {
     const newMode: AppMode = isPersonalMode ? 'baby' : 'personal';
     const modeNames = { personal: 'Personal Mode', baby: 'Baby Mode' };
-    
-    Alert.alert(
-      'Switch Mode',
-      `Switch to ${modeNames[newMode]}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Switch',
-          onPress: () => {
-            saveMode(newMode);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          },
+
+    Alert.alert('Switch Mode', `Switch to ${modeNames[newMode]}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Switch',
+        onPress: () => {
+          saveMode(newMode);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const showPremiumInfo = () => {
@@ -50,13 +53,13 @@ export default function SettingsScreen() {
     );
   };
 
-  const SettingItem = ({ 
-    icon, 
-    title, 
-    subtitle, 
-    onPress, 
+  const SettingItem = ({
+    icon,
+    title,
+    subtitle,
+    onPress,
     showArrow = true,
-    danger = false 
+    danger = false,
   }: {
     icon: React.ReactNode;
     title: string;
@@ -65,36 +68,55 @@ export default function SettingsScreen() {
     showArrow?: boolean;
     danger?: boolean;
   }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
         styles.settingItem,
-        { backgroundColor: isPersonalMode ? Colors.personal.surface : Colors.common.white }
+        {
+          backgroundColor: isPersonalMode
+            ? Colors.personal.surface
+            : Colors.common.white,
+        },
       ]}
       onPress={onPress}
     >
       <View style={styles.settingLeft}>
-        <View style={[
-          styles.iconContainer,
-          { backgroundColor: isPersonalMode ? Colors.personal.background : Colors.baby.surface }
-        ]}>
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: isPersonalMode
+                ? Colors.personal.background
+                : Colors.baby.surface,
+            },
+          ]}
+        >
           {icon}
         </View>
         <View>
-          <Text style={[
-            styles.settingTitle,
-            { color: danger ? Colors.common.error : currentColors.text }
-          ]}>
+          <Text
+            style={[
+              styles.settingTitle,
+              { color: danger ? Colors.common.error : currentColors.text },
+            ]}
+          >
             {title}
           </Text>
           {subtitle && (
-            <Text style={[styles.settingSubtitle, { color: currentColors.textSecondary }]}>
+            <Text
+              style={[
+                styles.settingSubtitle,
+                { color: currentColors.textSecondary },
+              ]}
+            >
               {subtitle}
             </Text>
           )}
         </View>
       </View>
       {showArrow && (
-        <Text style={[styles.arrow, { color: currentColors.textSecondary }]}>›</Text>
+        <Text style={[styles.arrow, { color: currentColors.textSecondary }]}>
+          ›
+        </Text>
       )}
     </TouchableOpacity>
   );
@@ -102,131 +124,161 @@ export default function SettingsScreen() {
   return React.createElement(
     LinearGradient,
     {
-      colors: isPersonalMode 
+      colors: isPersonalMode
         ? [Colors.personal.background, Colors.personal.surface]
         : [Colors.common.white, Colors.baby.surface],
-      style: styles.container
+      style: styles.container,
     },
     React.createElement(
-      ScrollView, 
+      ScrollView,
       { style: styles.content },
       React.createElement(
-        View, 
+        View,
         { style: styles.header },
         React.createElement(
-          View, 
+          View,
           {
             style: [
               styles.modeIndicator,
-              { backgroundColor: isPersonalMode ? Colors.personal.accent : Colors.baby.blue }
-            ]
+              {
+                backgroundColor: isPersonalMode
+                  ? Colors.personal.accent
+                  : Colors.baby.blue,
+              },
+            ],
           },
-          isPersonalMode 
-            ? React.createElement(User, { size: 24, color: Colors.common.white })
-            : React.createElement(Baby, { size: 24, color: Colors.common.white })
+          isPersonalMode
+            ? React.createElement(User, {
+                size: 24,
+                color: Colors.common.white,
+              })
+            : React.createElement(Baby, {
+                size: 24,
+                color: Colors.common.white,
+              })
         ),
         React.createElement(
-          Text, 
-          { style: [styles.title, { color: currentColors.text }] }, 
-          "Settings"
+          Text,
+          { style: [styles.title, { color: currentColors.text }] },
+          'Settings'
         ),
         React.createElement(
-          Text, 
+          Text,
           { style: [styles.subtitle, { color: currentColors.textSecondary }] },
           `Currently in ${isPersonalMode ? 'Personal' : 'Baby'} Mode`
         )
       ),
 
       React.createElement(
-        View, 
+        View,
         { style: styles.section },
         React.createElement(
-          Text, 
-          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
-          "App Mode"
-        ),
-        React.createElement(
-          SettingItem,
+          Text,
           {
-            icon: isPersonalMode 
-              ? React.createElement(Baby, { size: 20, color: Colors.baby.blue })
-              : React.createElement(User, { size: 20, color: Colors.personal.accent }),
-            title: `Switch to ${isPersonalMode ? 'Baby' : 'Personal'} Mode`,
-            subtitle: isPersonalMode 
-              ? 'Safe digital space for little ones'
-              : 'Focus, wellness, and distraction-free time',
-            onPress: switchMode
-          }
-        )
+            style: [
+              styles.sectionTitle,
+              { color: currentColors.textSecondary },
+            ],
+          },
+          'App Mode'
+        ),
+        React.createElement(SettingItem, {
+          icon: isPersonalMode
+            ? React.createElement(Baby, { size: 20, color: Colors.baby.blue })
+            : React.createElement(User, {
+                size: 20,
+                color: Colors.personal.accent,
+              }),
+          title: `Switch to ${isPersonalMode ? 'Baby' : 'Personal'} Mode`,
+          subtitle: isPersonalMode
+            ? 'Safe digital space for little ones'
+            : 'Focus, wellness, and distraction-free time',
+          onPress: switchMode,
+        })
       ),
 
       React.createElement(
-        View, 
+        View,
         { style: styles.section },
         React.createElement(
-          Text, 
-          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
-          "Features"
-        ),
-        React.createElement(
-          SettingItem,
+          Text,
           {
-            icon: React.createElement(Crown, { size: 20, color: Colors.common.gold }),
-            title: "Premium Features",
-            subtitle: isPremium ? "Active - Enjoy all premium features" : "Upgrade for advanced features",
-            onPress: showPremiumInfo
-          }
+            style: [
+              styles.sectionTitle,
+              { color: currentColors.textSecondary },
+            ],
+          },
+          'Features'
         ),
-        isPersonalMode && React.createElement(
-          SettingItem,
-          {
-            icon: React.createElement(Bell, { size: 20, color: Colors.personal.accent }),
-            title: "Notifications",
-            subtitle: "Focus session reminders",
-            onPress: () => Alert.alert('Coming Soon', 'Notification settings will be available in a future update.')
-          }
-        )
+        React.createElement(SettingItem, {
+          icon: React.createElement(Crown, {
+            size: 20,
+            color: Colors.common.gold,
+          }),
+          title: 'Premium Features',
+          subtitle: isPremium
+            ? 'Active - Enjoy all premium features'
+            : 'Upgrade for advanced features',
+          onPress: showPremiumInfo,
+        }),
+        isPersonalMode &&
+          React.createElement(SettingItem, {
+            icon: React.createElement(Bell, {
+              size: 20,
+              color: Colors.personal.accent,
+            }),
+            title: 'Notifications',
+            subtitle: 'Focus session reminders',
+            onPress: () =>
+              Alert.alert(
+                'Coming Soon',
+                'Notification settings will be available in a future update.'
+              ),
+          })
       ),
 
       React.createElement(
-        View, 
+        View,
         { style: styles.section },
         React.createElement(
-          Text, 
-          { style: [styles.sectionTitle, { color: currentColors.textSecondary }] },
-          "Support"
-        ),
-        React.createElement(
-          SettingItem,
+          Text,
           {
-            icon: React.createElement(Info, { size: 20, color: Colors.personal.accent }),
-            title: "About Nothing App",
-            subtitle: "Version 1.0",
-            onPress: showAbout
-          }
+            style: [
+              styles.sectionTitle,
+              { color: currentColors.textSecondary },
+            ],
+          },
+          'Support'
         ),
-        React.createElement(
-          SettingItem,
-          {
-            icon: React.createElement(Shield, { size: 20, color: Colors.common.success }),
-            title: "Privacy & Safety",
-            subtitle: "Your data stays on your device",
-            onPress: () => Alert.alert(
+        React.createElement(SettingItem, {
+          icon: React.createElement(Info, {
+            size: 20,
+            color: Colors.personal.accent,
+          }),
+          title: 'About Nothing App',
+          subtitle: 'Version 1.0',
+          onPress: showAbout,
+        }),
+        React.createElement(SettingItem, {
+          icon: React.createElement(Shield, {
+            size: 20,
+            color: Colors.common.success,
+          }),
+          title: 'Privacy & Safety',
+          subtitle: 'Your data stays on your device',
+          onPress: () =>
+            Alert.alert(
               'Privacy & Safety',
               'The Nothing App is designed with privacy in mind:\n\n• All your data stays on your device\n• No personal information is collected\n• Baby Mode provides a safe, locked environment\n• No internet connection required for core features',
               [{ text: 'Got it', style: 'default' }]
-            )
-          }
-        )
+            ),
+        })
       )
     ),
-    React.createElement(
-      PremiumModal, 
-      {
-        visible: showPremiumModal,
-        onClose: () => setShowPremiumModal(false)
-      }
-    )
+    React.createElement(PremiumModal, {
+      visible: showPremiumModal,
+      onClose: () => setShowPremiumModal(false),
+    })
   );
 }
 

@@ -15,7 +15,9 @@ export async function generateThumbnail(
     ImageManipulator = require('expo-image-manipulator');
   } catch {
     // If the native dependency isn't available (e.g., in tests), just return the source
-    console.warn('expo-image-manipulator not available; returning source as thumbnail');
+    console.warn(
+      'expo-image-manipulator not available; returning source as thumbnail'
+    );
     return sourceUri;
   }
 
@@ -24,7 +26,9 @@ export async function generateThumbnail(
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     FileSystem = require('expo-file-system');
   } catch {
-    console.warn('expo-file-system not available; returning source as thumbnail');
+    console.warn(
+      'expo-file-system not available; returning source as thumbnail'
+    );
     return sourceUri;
   }
 

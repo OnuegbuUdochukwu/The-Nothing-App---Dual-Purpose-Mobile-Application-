@@ -48,8 +48,8 @@ export default function DoodleScreen() {
     try {
       // Write base64 to file and continue the same save flow
       // Lazy require expo-file-system
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const FileSystem = require('expo-file-system');
+      const fsModule = await import('expo-file-system');
+      const FileSystem = (fsModule && (fsModule as any).default) || fsModule;
       const filename = `doodle-${Date.now()}.png`;
       const dir = FileSystem.cacheDirectory || FileSystem.documentDirectory;
       const dest = `${dir}${filename}`;
@@ -61,8 +61,9 @@ export default function DoodleScreen() {
       try {
         await saveToGallery(dest);
         try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          const { generateThumbnail } = require('@/utils/doodleThumbnail');
+          const thumbModule = await import('@/utils/doodleThumbnail');
+          const { generateThumbnail } =
+            (thumbModule && (thumbModule as any).default) || thumbModule;
           const thumb = await generateThumbnail(dest, 200, 200).catch(
             () => dest
           );
@@ -72,8 +73,8 @@ export default function DoodleScreen() {
             thumbnailUri: thumb,
             createdAt: new Date().toISOString(),
           });
-        } catch (err) {
-          console.warn('Thumbnail/galleries persist failed', err);
+        } catch {
+          console.warn('Thumbnail/galleries persist failed');
           try {
             await saveDoodle({
               id: Date.now().toString(),
@@ -225,10 +226,9 @@ export default function DoodleScreen() {
                     // PNG-first capture
                     let pngUri: string | null = null;
                     try {
-                      // eslint-disable-next-line @typescript-eslint/no-var-requires
-                      const {
-                        captureCanvasAsPNG,
-                      } = require('@/utils/doodleRaster');
+                      const rasterMod = await import('@/utils/doodleRaster');
+                      const { captureCanvasAsPNG } =
+                        (rasterMod && (rasterMod as any).default) || rasterMod;
                       pngUri = await captureCanvasAsPNG(
                         canvasRef.current,
                         `doodle-${Date.now()}.png`,
@@ -243,9 +243,11 @@ export default function DoodleScreen() {
                       try {
                         await saveToGallery(pngUri);
                         try {
-                          const {
-                            generateThumbnail,
-                          } = require('@/utils/doodleThumbnail');
+                          const thumbMod = await import(
+                            '@/utils/doodleThumbnail'
+                          );
+                          const { generateThumbnail } =
+                            (thumbMod && (thumbMod as any).default) || thumbMod;
                           const thumb = await generateThumbnail(
                             pngUri,
                             200,
@@ -269,8 +271,8 @@ export default function DoodleScreen() {
                               thumbnailUri: pngUri,
                               createdAt: new Date().toISOString(),
                             });
-                          } catch (err2) {
-                            console.warn('Persist gallery entry failed', err2);
+                          } catch {
+                            console.warn('PNG capture failed');
                           }
                         }
                         setBanner({
@@ -305,10 +307,9 @@ export default function DoodleScreen() {
                       // and continue the save flow in `handleSvgConversionResult`.
                       let webviewAvailable = false;
                       try {
-                        // eslint-disable-next-line @typescript-eslint/no-var-requires
-                        require('react-native-webview');
+                        await import('react-native-webview');
                         webviewAvailable = true;
-                      } catch (err) {
+                      } catch {
                         webviewAvailable = false;
                       }
 

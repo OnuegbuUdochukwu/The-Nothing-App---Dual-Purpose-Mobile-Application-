@@ -1,6 +1,12 @@
 import * as React from 'react';
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import { Volume2, VolumeX, Music } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -20,21 +26,46 @@ export default function CalmingSounds() {
 
   // In a real app, these would be actual sound files
   const sounds: Sound[] = [
-    { id: 'white-noise', name: 'White Noise', icon: <Volume2 size={20} color={Colors.baby.blue} />, isPremium: false },
-    { id: 'lullaby', name: 'Lullaby', icon: <Music size={20} color={Colors.baby.blue} />, isPremium: false },
-    { id: 'ocean-waves', name: 'Ocean Waves', icon: <Volume2 size={20} color={Colors.baby.blue} />, isPremium: true },
-    { id: 'heartbeat', name: 'Heartbeat', icon: <Volume2 size={20} color={Colors.baby.blue} />, isPremium: true },
-    { id: 'rain', name: 'Rain', icon: <Volume2 size={20} color={Colors.baby.blue} />, isPremium: true },
+    {
+      id: 'white-noise',
+      name: 'White Noise',
+      icon: <Volume2 size={20} color={Colors.baby.blue} />,
+      isPremium: false,
+    },
+    {
+      id: 'lullaby',
+      name: 'Lullaby',
+      icon: <Music size={20} color={Colors.baby.blue} />,
+      isPremium: false,
+    },
+    {
+      id: 'ocean-waves',
+      name: 'Ocean Waves',
+      icon: <Volume2 size={20} color={Colors.baby.blue} />,
+      isPremium: true,
+    },
+    {
+      id: 'heartbeat',
+      name: 'Heartbeat',
+      icon: <Volume2 size={20} color={Colors.baby.blue} />,
+      isPremium: true,
+    },
+    {
+      id: 'rain',
+      name: 'Rain',
+      icon: <Volume2 size={20} color={Colors.baby.blue} />,
+      isPremium: true,
+    },
   ];
 
   const toggleSound = (soundId: string) => {
-    const sound = sounds.find(s => s.id === soundId);
-    
+    const sound = sounds.find((s) => s.id === soundId);
+
     if (sound?.isPremium && !isPremium) {
       setShowPremiumModal(true);
       return;
     }
-    
+
     if (activeSound === soundId) {
       // Stop the sound
       setActiveSound(null);
@@ -45,59 +76,79 @@ export default function CalmingSounds() {
   };
 
   return React.createElement(
-    View, { style: styles.container },
-    React.createElement(Text, { style: styles.title }, "Calming Sounds"),
-      
+    View,
+    { style: styles.container },
+    React.createElement(Text, { style: styles.title }, 'Calming Sounds'),
+
     React.createElement(
-      ScrollView, 
-      { horizontal: true, showsHorizontalScrollIndicator: false, style: styles.soundsScroll },
-      sounds.map((sound) => React.createElement(
-        TouchableOpacity,
-        {
-          key: sound.id,
-          style: [
-            styles.soundButton,
-            activeSound === sound.id && styles.activeSound,
-            sound.isPremium && !isPremium && styles.premiumSound
-          ],
-          onPress: () => toggleSound(sound.id)
-        },
-        sound.icon,
+      ScrollView,
+      {
+        horizontal: true,
+        showsHorizontalScrollIndicator: false,
+        style: styles.soundsScroll,
+      },
+      sounds.map((sound) =>
         React.createElement(
-          Text, 
-          { style: [
-            styles.soundName,
-            activeSound === sound.id && styles.activeSoundText,
-            sound.isPremium && !isPremium && styles.premiumSoundText
-          ]},
-          sound.name
-        ),
-        sound.isPremium && !isPremium && React.createElement(
-          View, { style: styles.premiumBadge },
-          React.createElement(Text, { style: styles.premiumBadgeText }, "PRO")
+          TouchableOpacity,
+          {
+            key: sound.id,
+            style: [
+              styles.soundButton,
+              activeSound === sound.id && styles.activeSound,
+              sound.isPremium && !isPremium && styles.premiumSound,
+            ],
+            onPress: () => toggleSound(sound.id),
+          },
+          sound.icon,
+          React.createElement(
+            Text,
+            {
+              style: [
+                styles.soundName,
+                activeSound === sound.id && styles.activeSoundText,
+                sound.isPremium && !isPremium && styles.premiumSoundText,
+              ],
+            },
+            sound.name
+          ),
+          sound.isPremium &&
+            !isPremium &&
+            React.createElement(
+              View,
+              { style: styles.premiumBadge },
+              React.createElement(
+                Text,
+                { style: styles.premiumBadgeText },
+                'PRO'
+              )
+            )
         )
-      ))
+      )
     ),
-      
+
     React.createElement(
-      TouchableOpacity, 
+      TouchableOpacity,
       {
         style: styles.stopButton,
         onPress: () => setActiveSound(null),
-        disabled: !activeSound
+        disabled: !activeSound,
       },
-      React.createElement(VolumeX, { size: 16, color: activeSound ? Colors.baby.blue : Colors.baby.textSecondary }),
-      React.createElement(Text, { style: [styles.stopText, !activeSound && styles.disabledText] }, "Stop All")
+      React.createElement(VolumeX, {
+        size: 16,
+        color: activeSound ? Colors.baby.blue : Colors.baby.textSecondary,
+      }),
+      React.createElement(
+        Text,
+        { style: [styles.stopText, !activeSound && styles.disabledText] },
+        'Stop All'
+      )
     ),
-      
-    React.createElement(
-      PremiumModal, 
-      {
-        visible: showPremiumModal,
-        onClose: () => setShowPremiumModal(false),
-        featureName: "Premium Calming Sounds"
-      }
-    )
+
+    React.createElement(PremiumModal, {
+      visible: showPremiumModal,
+      onClose: () => setShowPremiumModal(false),
+      featureName: 'Premium Calming Sounds',
+    })
   );
 }
 

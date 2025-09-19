@@ -1,6 +1,12 @@
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Animated, TouchableWithoutFeedback } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Animated,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/Colors';
@@ -32,17 +38,23 @@ export default function ShapesScreen() {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const animationRef = useRef<number | null>(null);
 
-  const createShape = React.useCallback((): Shape => ({
-    id: Date.now().toString() + Math.random(),
-    x: Math.random() * (width - 100),
-    y: Math.random() * (height - 200) + 100,
-    size: 60 + Math.random() * 40,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    type: ['circle', 'square', 'triangle'][Math.floor(Math.random() * 3)] as 'circle' | 'square' | 'triangle',
-    animatedValue: new Animated.Value(1),
-    speedX: (Math.random() - 0.5) * 2,
-    speedY: (Math.random() - 0.5) * 2,
-  }), []);
+  const createShape = React.useCallback(
+    (): Shape => ({
+      id: Date.now().toString() + Math.random(),
+      x: Math.random() * (width - 100),
+      y: Math.random() * (height - 200) + 100,
+      size: 60 + Math.random() * 40,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      type: ['circle', 'square', 'triangle'][Math.floor(Math.random() * 3)] as
+        | 'circle'
+        | 'square'
+        | 'triangle',
+      animatedValue: new Animated.Value(1),
+      speedX: (Math.random() - 0.5) * 2,
+      speedY: (Math.random() - 0.5) * 2,
+    }),
+    []
+  );
 
   useEffect(() => {
     // Initialize with some shapes
@@ -51,11 +63,11 @@ export default function ShapesScreen() {
 
     // Start animation loop
     const animate = () => {
-      setShapes(currentShapes => 
-        currentShapes.map(shape => ({
+      setShapes((currentShapes) =>
+        currentShapes.map((shape) => ({
           ...shape,
           x: (shape.x + shape.speedX + width) % width,
-          y: (shape.y + shape.speedY + height - 200) % (height - 200) + 100,
+          y: ((shape.y + shape.speedY + height - 200) % (height - 200)) + 100,
         }))
       );
       animationRef.current = requestAnimationFrame(animate);
@@ -72,7 +84,7 @@ export default function ShapesScreen() {
 
   const handleShapePress = (shape: Shape) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    
+
     // Animate the shape
     Animated.sequence([
       Animated.timing(shape.animatedValue, {
@@ -89,7 +101,7 @@ export default function ShapesScreen() {
 
     // Add a new shape occasionally
     if (Math.random() < 0.3 && shapes.length < 8) {
-      setShapes(current => [...current, createShape()]);
+      setShapes((current) => [...current, createShape()]);
     }
   };
 
@@ -144,14 +156,12 @@ export default function ShapesScreen() {
       <TouchableWithoutFeedback
         onPress={() => {
           if (shapes.length < 8) {
-            setShapes(current => [...current, createShape()]);
+            setShapes((current) => [...current, createShape()]);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }
         }}
       >
-        <View style={styles.playground}>
-          {shapes.map(renderShape)}
-        </View>
+        <View style={styles.playground}>{shapes.map(renderShape)}</View>
       </TouchableWithoutFeedback>
     </LinearGradient>
   );
