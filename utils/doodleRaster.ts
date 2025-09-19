@@ -12,9 +12,9 @@ export async function captureCanvasAsPNG(
   // Lazy-require to avoid TypeScript/runtime issues when native module isn't installed in test env
   let captureRef: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     captureRef = require('react-native-view-shot').captureRef;
-  } catch (e) {
+  } catch {
     throw new Error(
       'react-native-view-shot is required for PNG capture. Install it in the project.'
     );
@@ -22,9 +22,9 @@ export async function captureCanvasAsPNG(
 
   let FileSystem: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     FileSystem = require('expo-file-system');
-  } catch (e) {
+  } catch {
     throw new Error(
       'expo-file-system is required to save PNG files. Install it in the project.'
     );
@@ -48,7 +48,7 @@ export async function captureCanvasAsPNG(
     // If move fails (some platforms return content:// style URIs), try copy
     try {
       await FileSystem.copyAsync({ from: result, to: dest });
-    } catch (err) {
+    } catch {
       // As a last resort return the original result path
       return result;
     }
@@ -77,21 +77,25 @@ export async function rasterizeSVGToPNG(
   // keep test environments safe.
   let WebView: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     WebView = require('react-native-webview').WebView;
-  } catch (e) {
+  } catch {
     throw new Error(
       'react-native-webview is required to rasterize SVG to PNG.'
     );
   }
+  // reference to satisfy linter: we only check availability here
+  void WebView;
 
   let FileSystem: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     FileSystem = require('expo-file-system');
-  } catch (e) {
+  } catch {
     throw new Error('expo-file-system is required to save PNG files.');
   }
+  // referenced to satisfy linter — actual write happens in UI component flow
+  void FileSystem;
 
   // Because we can't synchronously render a WebView here (this is a utility),
   // we provide a helper promise that expects the app to mount a small converter

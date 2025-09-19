@@ -11,26 +11,20 @@ export async function generateThumbnail(
 
   let ImageManipulator: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     ImageManipulator = require('expo-image-manipulator');
-  } catch (e) {
+  } catch {
     // If the native dependency isn't available (e.g., in tests), just return the source
-    console.warn(
-      'expo-image-manipulator not available; returning source as thumbnail',
-      e
-    );
+    console.warn('expo-image-manipulator not available; returning source as thumbnail');
     return sourceUri;
   }
 
   let FileSystem: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     FileSystem = require('expo-file-system');
-  } catch (e) {
-    console.warn(
-      'expo-file-system not available; returning source as thumbnail',
-      e
-    );
+  } catch {
+    console.warn('expo-file-system not available; returning source as thumbnail');
     return sourceUri;
   }
 
@@ -45,15 +39,12 @@ export async function generateThumbnail(
   try {
     await FileSystem.moveAsync({ from: manipResult.uri, to: dest });
     return dest;
-  } catch (err) {
+  } catch {
     try {
       await FileSystem.copyAsync({ from: manipResult.uri, to: dest });
       return dest;
-    } catch (err2) {
-      console.warn(
-        'Failed to move/copy thumbnail, returning manipulator uri',
-        err2
-      );
+    } catch {
+      console.warn('Failed to move/copy thumbnail, returning manipulator uri');
       return manipResult.uri;
     }
   }

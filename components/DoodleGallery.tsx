@@ -14,7 +14,6 @@ import {
 import { listDoodles, deleteDoodle, DoodleEntry } from '@/utils/doodleGallery';
 import { shareFile } from '@/utils/doodleExport';
 import { Colors } from '@/constants/Colors';
-import { Modal as RNModal } from 'react-native';
 
 type Props = {
   visible: boolean;
@@ -138,7 +137,7 @@ export default function DoodleGallery({ visible, onRequestClose }: Props) {
           />
         )}
 
-        <RNModal
+        <Modal
           visible={!!previewUri}
           transparent={true}
           onRequestClose={() => setPreviewUri(null)}
@@ -154,7 +153,7 @@ export default function DoodleGallery({ visible, onRequestClose }: Props) {
               <Image source={{ uri: previewUri }} style={styles.previewImage} />
             ) : null}
           </View>
-        </RNModal>
+        </Modal>
       </View>
     </Modal>
   );

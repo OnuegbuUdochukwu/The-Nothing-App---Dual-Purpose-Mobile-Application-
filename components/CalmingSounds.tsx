@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Volume2, VolumeX, Music } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';

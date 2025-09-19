@@ -19,20 +19,20 @@ interface Shape {
   speedY: number;
 }
 
+const colors = [
+  Colors.baby.red,
+  Colors.baby.blue,
+  Colors.baby.yellow,
+  Colors.baby.green,
+  '#FF69B4',
+  '#8A2BE2',
+];
+
 export default function ShapesScreen() {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const animationRef = useRef<number | null>(null);
 
-  const colors = [
-    Colors.baby.red,
-    Colors.baby.blue,
-    Colors.baby.yellow,
-    Colors.baby.green,
-    '#FF69B4',
-    '#8A2BE2',
-  ];
-
-  const createShape = (): Shape => ({
+  const createShape = React.useCallback((): Shape => ({
     id: Date.now().toString() + Math.random(),
     x: Math.random() * (width - 100),
     y: Math.random() * (height - 200) + 100,
@@ -42,7 +42,7 @@ export default function ShapesScreen() {
     animatedValue: new Animated.Value(1),
     speedX: (Math.random() - 0.5) * 2,
     speedY: (Math.random() - 0.5) * 2,
-  });
+  }), []);
 
   useEffect(() => {
     // Initialize with some shapes
@@ -68,7 +68,7 @@ export default function ShapesScreen() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [createShape]);
 
   const handleShapePress = (shape: Shape) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);

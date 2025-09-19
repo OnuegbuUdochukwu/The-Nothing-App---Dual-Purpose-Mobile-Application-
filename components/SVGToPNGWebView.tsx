@@ -87,9 +87,9 @@ export default function SVGToPNGWebView({
   // installed can still import this file without failing.
   let WebView: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     WebView = require('react-native-webview').WebView;
-  } catch (e) {
+  } catch {
     // Will render a cancel state below if WebView isn't available
     WebView = null;
   }
@@ -121,7 +121,7 @@ export default function SVGToPNGWebView({
                   } else {
                     onCancel && onCancel();
                   }
-                } catch (err) {
+                } catch {
                   onCancel && onCancel();
                 }
               }}

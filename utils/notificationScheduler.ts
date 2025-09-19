@@ -103,7 +103,7 @@ export async function reschedulePersistedSessions(daysAhead = 7) {
           await Notifications.cancelScheduledNotificationAsync(
             s.preNotificationId
           );
-      } catch (e) {
+      } catch {
         // ignore cancel errors
       }
 
@@ -113,17 +113,17 @@ export async function reschedulePersistedSessions(daysAhead = 7) {
         s.notificationId = (ids as any).id;
         s.preNotificationId = (ids as any).preId;
         count += 1;
-      } catch (e) {
+      } catch (err) {
         // permission denied or schedule failed; skip
-        console.error('Failed to schedule persisted session', e);
+        console.error('Failed to schedule persisted session', err);
       }
     }
 
     // write back updated sessions (with ids)
     await AsyncStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
     return count;
-  } catch (e) {
-    console.error('reschedulePersistedSessions error', e);
+  } catch (err) {
+    console.error('reschedulePersistedSessions error', err);
     return 0;
   }
 }

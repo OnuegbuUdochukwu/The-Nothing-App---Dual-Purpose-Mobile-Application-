@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Svg, Path } from 'react-native-svg';
 import { Dimensions, StyleSheet, View } from 'react-native';

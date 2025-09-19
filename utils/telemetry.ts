@@ -20,11 +20,9 @@ export async function logEvent(name: string, props: Record<string, any> = {}) {
     // also log to console for dev visibility
     // Avoid sending any PII — only store event name and non-identifying props
     // (caller must ensure props are non-PII)
-    // eslint-disable-next-line no-console
     console.log('[telemetry]', entry.name, entry.props);
     return entry;
   } catch (e) {
-    // eslint-disable-next-line no-console
     console.error('telemetry log failed', e);
     return null;
   }

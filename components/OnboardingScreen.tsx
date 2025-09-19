@@ -1,11 +1,9 @@
 import * as React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, Baby } from 'lucide-react-native';
 import { AppMode } from '@/types';
 import { Colors } from '@/constants/Colors';
-
-const { width, height } = Dimensions.get('window');
 
 interface OnboardingScreenProps {
   onModeSelect: (mode: AppMode) => void;

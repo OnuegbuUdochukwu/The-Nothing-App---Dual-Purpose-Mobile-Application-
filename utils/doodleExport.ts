@@ -35,9 +35,9 @@ export async function saveSVGToFile(
   // Lazy-require expo-file-system to avoid hard dependency during static analysis
   let FileSystem: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     FileSystem = require('expo-file-system');
-  } catch (e) {
+  } catch {
     throw new Error(
       'expo-file-system is required to save files. Install it in the project.'
     );
@@ -58,9 +58,9 @@ export async function saveToGallery(fileUri: string) {
   // Lazy-require expo-media-library to avoid hard dependency during static analysis
   let MediaLibrary: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     MediaLibrary = require('expo-media-library');
-  } catch (e) {
+  } catch {
     throw new Error(
       'expo-media-library is required to save to gallery. Install it in the project.'
     );
@@ -81,9 +81,9 @@ export async function saveToGallery(fileUri: string) {
 export async function shareFile(fileUri: string) {
   let Sharing: any;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     Sharing = require('expo-sharing');
-  } catch (e) {
+  } catch {
     throw new Error(
       'expo-sharing is required to share files. Install it in the project.'
     );
