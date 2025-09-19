@@ -1,6 +1,12 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { BarChart2, Calendar, Clock, X } from 'lucide-react-native';
 import { Colors } from '@/constants/Colors';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -18,7 +24,10 @@ type ParentalDashboardProps = {
   onClose: () => void;
 };
 
-export default function ParentalDashboard({ visible, onClose }: ParentalDashboardProps) {
+export default function ParentalDashboard({
+  visible,
+  onClose,
+}: ParentalDashboardProps) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [totalTime, setTotalTime] = useState(0);
@@ -37,11 +46,16 @@ export default function ParentalDashboard({ visible, onClose }: ParentalDashboar
       if (sessionsData) {
         const parsedSessions = JSON.parse(sessionsData) as SessionData[];
         setSessions(parsedSessions);
-        
+
         // Calculate stats
-        const total = parsedSessions.reduce((sum, session) => sum + session.duration, 0);
+        const total = parsedSessions.reduce(
+          (sum, session) => sum + session.duration,
+          0
+        );
         setTotalTime(total);
-        setAverageTime(parsedSessions.length > 0 ? total / parsedSessions.length : 0);
+        setAverageTime(
+          parsedSessions.length > 0 ? total / parsedSessions.length : 0
+        );
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -60,11 +74,11 @@ export default function ParentalDashboard({ visible, onClose }: ParentalDashboar
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -80,23 +94,26 @@ export default function ParentalDashboard({ visible, onClose }: ParentalDashboar
               <X size={24} color={Colors.baby.blue} />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.premiumPrompt}>
             <BarChart2 size={48} color={Colors.baby.blue} />
-            <Text style={styles.premiumText}>Unlock the Parental Dashboard</Text>
-            <Text style={styles.premiumSubtext}>
-              Track your baby's screen time, view session history, and get insights with our premium features.
+            <Text style={styles.premiumText}>
+              Unlock the Parental Dashboard
             </Text>
-            <TouchableOpacity 
+            <Text style={styles.premiumSubtext}>
+              Track your baby&apos;s screen time, view session history, and get
+              insights with our premium features.
+            </Text>
+            <TouchableOpacity
               style={styles.upgradeButton}
               onPress={() => setShowPremiumModal(true)}
             >
               <Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
             </TouchableOpacity>
           </View>
-          
-          <PremiumModal 
-            visible={showPremiumModal} 
+
+          <PremiumModal
+            visible={showPremiumModal}
             onClose={() => setShowPremiumModal(false)}
             featureName="Parental Dashboard"
           />
@@ -106,58 +123,109 @@ export default function ParentalDashboard({ visible, onClose }: ParentalDashboar
   }
 
   return React.createElement(
-    View, { style: styles.overlay },
+    View,
+    { style: styles.overlay },
     React.createElement(
-      View, { style: styles.container },
+      View,
+      { style: styles.container },
       React.createElement(
-        View, { style: styles.header },
-        React.createElement(Text, { style: styles.title }, "Parental Dashboard"),
+        View,
+        { style: styles.header },
         React.createElement(
-          TouchableOpacity, { style: styles.closeButton, onPress: onClose },
+          Text,
+          { style: styles.title },
+          'Parental Dashboard'
+        ),
+        React.createElement(
+          TouchableOpacity,
+          { style: styles.closeButton, onPress: onClose },
           React.createElement(X, { size: 24, color: Colors.baby.blue })
         )
       ),
-      
+
       React.createElement(
-        View, { style: styles.statsContainer },
+        View,
+        { style: styles.statsContainer },
         React.createElement(
-          View, { style: styles.statCard },
+          View,
+          { style: styles.statCard },
           React.createElement(Clock, { size: 20, color: Colors.baby.blue }),
-          React.createElement(Text, { style: styles.statValue }, formatTime(totalTime)),
-          React.createElement(Text, { style: styles.statLabel }, "Total Screen Time")
+          React.createElement(
+            Text,
+            { style: styles.statValue },
+            formatTime(totalTime)
+          ),
+          React.createElement(
+            Text,
+            { style: styles.statLabel },
+            'Total Screen Time'
+          )
         ),
-        
+
         React.createElement(
-          View, { style: styles.statCard },
+          View,
+          { style: styles.statCard },
           React.createElement(Calendar, { size: 20, color: Colors.baby.blue }),
-          React.createElement(Text, { style: styles.statValue }, sessions.length),
-          React.createElement(Text, { style: styles.statLabel }, "Total Sessions")
+          React.createElement(
+            Text,
+            { style: styles.statValue },
+            sessions.length
+          ),
+          React.createElement(
+            Text,
+            { style: styles.statLabel },
+            'Total Sessions'
+          )
         ),
-        
+
         React.createElement(
-          View, { style: styles.statCard },
+          View,
+          { style: styles.statCard },
           React.createElement(BarChart2, { size: 20, color: Colors.baby.blue }),
-          React.createElement(Text, { style: styles.statValue }, formatTime(averageTime)),
-          React.createElement(Text, { style: styles.statLabel }, "Avg. Session")
+          React.createElement(
+            Text,
+            { style: styles.statValue },
+            formatTime(averageTime)
+          ),
+          React.createElement(Text, { style: styles.statLabel }, 'Avg. Session')
         )
       ),
-      
-      React.createElement(Text, { style: styles.sectionTitle }, "Recent Sessions"),
-      
+
       React.createElement(
-        ScrollView, { style: styles.sessionsList },
-        sessions.length > 0 ?
-          sessions.map((session, index) => 
-            React.createElement(
-              View, { key: index, style: styles.sessionItem },
+        Text,
+        { style: styles.sectionTitle },
+        'Recent Sessions'
+      ),
+
+      React.createElement(
+        ScrollView,
+        { style: styles.sessionsList },
+        sessions.length > 0
+          ? sessions.map((session, index) =>
               React.createElement(
-                View, { style: styles.sessionInfo },
-                React.createElement(Text, { style: styles.sessionDate }, formatDate(session.date)),
-                React.createElement(Text, { style: styles.sessionDuration }, formatTime(session.duration))
+                View,
+                { key: index, style: styles.sessionItem },
+                React.createElement(
+                  View,
+                  { style: styles.sessionInfo },
+                  React.createElement(
+                    Text,
+                    { style: styles.sessionDate },
+                    formatDate(session.date)
+                  ),
+                  React.createElement(
+                    Text,
+                    { style: styles.sessionDuration },
+                    formatTime(session.duration)
+                  )
+                )
               )
             )
-          ) :
-          React.createElement(Text, { style: styles.emptyText }, "No sessions recorded yet")
+          : React.createElement(
+              Text,
+              { style: styles.emptyText },
+              'No sessions recorded yet'
+            )
       )
     )
   );

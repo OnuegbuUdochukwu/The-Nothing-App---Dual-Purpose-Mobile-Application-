@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
+  Animated,
   View,
   Text,
   TouchableOpacity,
@@ -12,22 +12,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Play,
-  Pause,
-  Square,
-  ChevronUp,
-  BellOff,
-  BarChart,
-  Clock,
-  Calendar,
-} from 'lucide-react-native';
+import { Play, ChevronUp, BellOff, BarChart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { Colors } from '@/constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import {
+  PanGestureHandler,
+  State,
   PanGestureHandlerGestureEvent,
   PanGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
@@ -124,7 +116,7 @@ export default function FocusScreen() {
     return () => {
       if (timerFadeTimeout.current) clearTimeout(timerFadeTimeout.current);
     };
-  }, [isActive]);
+  }, [isActive, timerOpacity]);
   useEffect(() => {
     (async () => {
       const storedPin = await AsyncStorage.getItem('parentalPin');
@@ -133,43 +125,12 @@ export default function FocusScreen() {
   }, []);
 
   const durations = [5, 15, 30, 60];
+  // customDuration reserved for future custom input (suppress unused-var warning for now)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [customDuration, setCustomDuration] = useState('');
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => {
-          if (time <= 1) {
-            setIsActive(false);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            restoreNotifications();
-            saveSessionToHistory(true); // Session was completed successfully
-            Alert.alert(
-              'Session Complete',
-              'Well done! You completed your focus session. Notifications have been restored.'
-            );
-            return 0;
-          }
-          return time - 1;
-        });
-      }, 1000);
-    } else if (interval) {
-      clearInterval(interval);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-      // Ensure notifications are restored when component unmounts if session is active
-      if (isActive) {
-        restoreNotifications();
-      }
-    };
-  }, [isActive, timeLeft]);
-
   // Function to silence notifications
-  const silenceNotifications = async () => {
+  const silenceNotifications = useCallback(async () => {
     // Update notification handler to silence notifications
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -181,10 +142,10 @@ export default function FocusScreen() {
       }),
     });
     setNotificationsSilenced(true);
-  };
+  }, []);
 
   // Function to restore notifications
-  const restoreNotifications = async () => {
+  const restoreNotifications = useCallback(async () => {
     // Restore default notification behavior
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -196,7 +157,7 @@ export default function FocusScreen() {
       }),
     });
     setNotificationsSilenced(false);
-  };
+  }, []);
 
   const startSession = async () => {
     setTimeLeft(selectedDuration * 60);
@@ -209,41 +170,44 @@ export default function FocusScreen() {
     );
   };
 
-  const saveSessionToHistory = (completed: boolean) => {
-    const newSession = {
-      date: new Date().toISOString(),
-      duration: selectedDuration,
-      completed,
-    };
+  const saveSessionToHistory = useCallback(
+    (completed: boolean) => {
+      const newSession = {
+        date: new Date().toISOString(),
+        duration: selectedDuration,
+        completed,
+      };
 
-    setSessionHistory((prev) => {
-      const updated = [newSession, ...prev].slice(0, 50); // keep last 50 locally
-      // persist to AsyncStorage as full FocusSession records
-      (async () => {
-        try {
-          const FOCUS_SESSIONS_KEY = 'focusSessions';
-          const raw = await AsyncStorage.getItem(FOCUS_SESSIONS_KEY);
-          let stored: any[] = raw ? JSON.parse(raw) : [];
-          stored.unshift({
-            id: Date.now().toString(),
-            duration: selectedDuration,
-            startTime: new Date().toISOString(),
-            completed,
-          });
-          // keep last 100
-          stored = stored.slice(0, 100);
-          await AsyncStorage.setItem(
-            FOCUS_SESSIONS_KEY,
-            JSON.stringify(stored)
-          );
-        } catch (e) {
-          console.error('Failed to persist focus session', e);
-        }
-      })();
+      setSessionHistory((prev) => {
+        const updated = [newSession, ...prev].slice(0, 50); // keep last 50 locally
+        // persist to AsyncStorage as full FocusSession records
+        (async () => {
+          try {
+            const FOCUS_SESSIONS_KEY = 'focusSessions';
+            const raw = await AsyncStorage.getItem(FOCUS_SESSIONS_KEY);
+            let stored: any[] = raw ? JSON.parse(raw) : [];
+            stored.unshift({
+              id: Date.now().toString(),
+              duration: selectedDuration,
+              startTime: new Date().toISOString(),
+              completed,
+            });
+            // keep last 100
+            stored = stored.slice(0, 100);
+            await AsyncStorage.setItem(
+              FOCUS_SESSIONS_KEY,
+              JSON.stringify(stored)
+            );
+          } catch (e) {
+            console.error('Failed to persist focus session', e);
+          }
+        })();
 
-      return updated;
-    }); // Keep last 50 sessions locally
-  };
+        return updated;
+      }); // Keep last 50 sessions locally
+    },
+    [selectedDuration]
+  );
 
   const stopSession = async () => {
     setIsActive(false);
@@ -384,9 +348,7 @@ export default function FocusScreen() {
     if (!showInsights) return null;
 
     const completedSessions = sessionHistory.filter((s) => s.completed).length;
-    const totalMinutes = sessionHistory.reduce((acc, session) => {
-      return session.completed ? acc + session.duration : acc;
-    }, 0);
+    // totalMinutes intentionally unused for now (kept for future insights)
 
     return (
       <View style={styles.insightsOverlay}>

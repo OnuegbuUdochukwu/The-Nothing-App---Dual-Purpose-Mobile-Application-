@@ -1,28 +1,19 @@
-import { BackHandler } from 'react-native';
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
+  BackHandler,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Dimensions,
   Platform,
   TextInput,
-  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  Lock,
-  Clock as Unlock,
-  Timer,
-  Music,
-  BarChart2,
-} from 'lucide-react-native';
+import { Lock, Timer, Music, BarChart2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as NavigationBar from 'expo-navigation-bar';
-import * as SystemUI from 'expo-system-ui';
 import { Colors } from '@/constants/Colors';
 import * as Notifications from 'expo-notifications';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -30,8 +21,6 @@ import CalmingSounds from '@/components/CalmingSounds';
 import PremiumModal from '@/components/PremiumModal';
 import ParentalDashboard from '@/components/ParentalDashboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width, height } = Dimensions.get('window');
 
 export default function BabyLockScreen() {
   // ...state declarations and other hooks...
@@ -61,10 +50,40 @@ export default function BabyLockScreen() {
 
   const { isPremium } = useSubscription();
 
+  // Additional UI state must be declared at top-level (before any early returns)
+  // PIN setting dialog state
+  const [showSetPin, setShowSetPin] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinSetError, setPinSetError] = useState('');
+
+  const handleSetPin = () => {
+    if (newPin.length !== 4) {
+      setPinSetError('PIN must be 4 digits');
+      return;
+    }
+    if (newPin === '1234') {
+      setPinSetError('Cannot use default PIN (1234).');
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinSetError('PINs do not match');
+      return;
+    }
+    setParentalPin(newPin);
+    AsyncStorage.setItem('parentalPin', newPin);
+    setShowSetPin(false);
+    setNewPin('');
+    setConfirmPin('');
+    setPinSetError('');
+    Alert.alert('Success', 'Parental PIN has been set successfully.');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
   const durations = [5, 10, 15, 20];
 
   // Notification silencing logic (must be after state declarations)
-  const silenceNotifications = async () => {
+  const silenceNotifications = useCallback(async () => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: false,
@@ -74,9 +93,9 @@ export default function BabyLockScreen() {
         shouldSetBadge: false,
       }),
     });
-  };
+  }, []);
 
-  const restoreNotifications = async () => {
+  const restoreNotifications = useCallback(async () => {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
         shouldShowAlert: true,
@@ -86,29 +105,66 @@ export default function BabyLockScreen() {
         shouldSetBadge: true,
       }),
     });
-  };
+  }, []);
 
+  const saveSessionHistory = useCallback(async () => {
+    if (!sessionStartTime) return;
+
+    try {
+      // Calculate session duration in minutes
+      const endTime = new Date();
+      const durationMs = endTime.getTime() - sessionStartTime.getTime();
+      const durationMinutes = Math.round(durationMs / (1000 * 60));
+
+      // Create session record
+      const sessionData = {
+        date: sessionStartTime.toISOString(),
+        duration: durationMinutes,
+        mode: 'baby',
+      };
+
+      // Get existing history
+      const existingData = await AsyncStorage.getItem('babySessionHistory');
+      let history = existingData ? JSON.parse(existingData) : [];
+
+      // Add new session to history
+      history = [sessionData, ...history];
+
+      // Save updated history
+      await AsyncStorage.setItem('babySessionHistory', JSON.stringify(history));
+    } catch (error) {
+      console.error('Error saving session history:', error);
+    }
+  }, [sessionStartTime]);
+
+  // Manage Android navigation bar / hardware back behavior when locked
   useEffect(() => {
-    // Block hardware back button and enable immersive mode when locked (Android only)
-    useEffect(() => {
-      if (Platform.OS === 'android' && isLocked) {
-        // Hide navigation bar and block hardware back button
-        NavigationBar.setBehaviorAsync('inset-swipe');
-        NavigationBar.setVisibilityAsync('hidden');
-        const backHandler = BackHandler.addEventListener(
-          'hardwareBackPress',
-          () => true
-        );
-        return () => {
-          NavigationBar.setBehaviorAsync('overlay-swipe');
-          NavigationBar.setVisibilityAsync('visible');
-          backHandler.remove();
-        };
-      } else if (Platform.OS === 'android') {
-        NavigationBar.setBehaviorAsync('overlay-swipe');
-        NavigationBar.setVisibilityAsync('visible');
-      }
-    }, [isLocked]);
+    if (Platform.OS !== 'android') return;
+
+    let backHandler: { remove: () => void } | null = null;
+
+    if (isLocked) {
+      // Hide navigation bar and block hardware back button
+      NavigationBar.setBehaviorAsync('inset-swipe');
+      NavigationBar.setVisibilityAsync('hidden');
+      backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => true
+      );
+    } else {
+      NavigationBar.setBehaviorAsync('overlay-swipe');
+      NavigationBar.setVisibilityAsync('visible');
+    }
+
+    return () => {
+      NavigationBar.setBehaviorAsync('overlay-swipe');
+      NavigationBar.setVisibilityAsync('visible');
+      if (backHandler) backHandler.remove();
+    };
+  }, [isLocked]);
+
+  // Timer and notification handling
+  useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     if (isLocked && timeLeft > 0) {
       if (Platform.OS === 'android') {
@@ -146,7 +202,13 @@ export default function BabyLockScreen() {
       }
       restoreNotifications();
     };
-  }, [isLocked, timeLeft]);
+  }, [
+    isLocked,
+    timeLeft,
+    saveSessionHistory,
+    silenceNotifications,
+    restoreNotifications,
+  ]);
 
   const startBabyMode = () => {
     setTimeLeft(selectedDuration * 60);
@@ -162,35 +224,7 @@ export default function BabyLockScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
   };
 
-  const saveSessionHistory = async () => {
-    if (!sessionStartTime) return;
-
-    try {
-      // Calculate session duration in minutes
-      const endTime = new Date();
-      const durationMs = endTime.getTime() - sessionStartTime.getTime();
-      const durationMinutes = Math.round(durationMs / (1000 * 60));
-
-      // Create session record
-      const sessionData = {
-        date: sessionStartTime.toISOString(),
-        duration: durationMinutes,
-        mode: 'baby',
-      };
-
-      // Get existing history
-      const existingData = await AsyncStorage.getItem('babySessionHistory');
-      let history = existingData ? JSON.parse(existingData) : [];
-
-      // Add new session to history
-      history = [sessionData, ...history];
-
-      // Save updated history
-      await AsyncStorage.setItem('babySessionHistory', JSON.stringify(history));
-    } catch (error) {
-      console.error('Error saving session history:', error);
-    }
-  };
+  // (saveSessionHistory already defined above)
 
   const handleUnlockAttempt = () => {
     setUnlockAttempts((prev) => prev + 1);
@@ -361,34 +395,6 @@ export default function BabyLockScreen() {
     );
   }
 
-  const [showSetPin, setShowSetPin] = useState(false);
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinSetError, setPinSetError] = useState('');
-
-  const handleSetPin = () => {
-    if (newPin.length !== 4) {
-      setPinSetError('PIN must be 4 digits');
-      return;
-    }
-    if (newPin === '1234') {
-      setPinSetError('Cannot use default PIN (1234).');
-      return;
-    }
-    if (newPin !== confirmPin) {
-      setPinSetError('PINs do not match');
-      return;
-    }
-    setParentalPin(newPin);
-    AsyncStorage.setItem('parentalPin', newPin);
-    setShowSetPin(false);
-    setNewPin('');
-    setConfirmPin('');
-    setPinSetError('');
-    Alert.alert('Success', 'Parental PIN has been set successfully.');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
-
   const handleSoundsPress = () => {
     if (isPremium) {
       setShowSounds(!showSounds);
@@ -415,6 +421,76 @@ export default function BabyLockScreen() {
       visible: showDashboard,
       onClose: () => setShowDashboard(false),
     }),
+
+    showSetPin
+      ? React.createElement(
+          View,
+          { style: styles.pinSetContainer },
+          React.createElement(
+            Text,
+            { style: styles.pinTitle },
+            'Set Parental PIN'
+          ),
+          React.createElement(TextInput, {
+            style: styles.pinSetInput,
+            value: newPin,
+            onChangeText: setNewPin,
+            keyboardType: 'number-pad',
+            secureTextEntry: true,
+            maxLength: 4,
+            placeholder: 'Enter 4-digit PIN',
+            placeholderTextColor: Colors.common.white + '80',
+          }),
+          React.createElement(TextInput, {
+            style: styles.pinSetInput,
+            value: confirmPin,
+            onChangeText: setConfirmPin,
+            keyboardType: 'number-pad',
+            secureTextEntry: true,
+            maxLength: 4,
+            placeholder: 'Confirm PIN',
+            placeholderTextColor: Colors.common.white + '80',
+          }),
+          pinSetError
+            ? React.createElement(
+                Text,
+                { style: styles.pinSetError },
+                pinSetError
+              )
+            : null,
+          React.createElement(
+            View,
+            { style: { flexDirection: 'row', marginTop: 12 } },
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [styles.pinButton, { flex: 1, marginRight: 8 }],
+                onPress: () => {
+                  setShowSetPin(false);
+                  setPinSetError('');
+                },
+              },
+              React.createElement(
+                Text,
+                { style: styles.pinButtonText },
+                'Cancel'
+              )
+            ),
+            React.createElement(
+              TouchableOpacity,
+              {
+                style: [styles.pinButton, { flex: 1 }],
+                onPress: () => handleSetPin(),
+              },
+              React.createElement(
+                Text,
+                { style: styles.pinButtonText },
+                'Set PIN'
+              )
+            )
+          )
+        )
+      : null,
     React.createElement(
       View,
       { style: styles.content },
