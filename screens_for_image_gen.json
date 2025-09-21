@@ -1,0 +1,89 @@
+{
+  "screens": [
+    {
+      "name": "Onboarding Screen",
+      "description": "The first-launch choice screen that asks 'For Me (Personal Mode)' or 'For My Child (Baby Mode)'.",
+      "visual_prompt": "Two large mode cards side-by-side: left card is minimalist/dark (Personal) with a user icon; right card is soft/bright (Baby) with a baby icon; centered app title; calm, modern typography; subtle gradient background; high-contrast CTA areas."
+    },
+    {
+      "name": "Main Loading / Redirect",
+      "description": "App entry point shown briefly while the app resolves saved mode and redirects the user to the appropriate tab.",
+      "visual_prompt": "Full-screen vertical gradient (black → near-black) with a small centered logo or subtle spinner; minimal text; moody, calm aesthetic."
+    },
+    {
+      "name": "Focus (Nothing Block) Screen",
+      "description": "Full-screen focus timer with duration presets and a large minimal digital timer while active; includes an escape hint and notifications-silenced badge.",
+      "visual_prompt": "Minimalist dark screen, mostly black; faint digital timer near bottom (e.g., 14:59) with low opacity; subtle escape hint (swipe-up arrow) and a small badge 'Notifications Silenced' top-right; very calm, Zen mood."
+    },
+    {
+      "name": "Adult Doodle Pad",
+      "description": "A drawing canvas for adult users, with color palette, stroke-width controls, undo/clear/save, and a gallery modal.",
+      "visual_prompt": "Clean canvas area (white or dark depending on theme) with slim top toolbar: circular color swatches, stroke width buttons, undo and trash icons, and a Save button; modern, minimal UI; show a few drawn strokes to indicate interaction."
+    },
+    {
+      "name": "Nothing Scheduler",
+      "description": "Interface for creating, listing, enabling/disabling scheduled Nothing sessions (time, duration, repeat).",
+      "visual_prompt": "A list-based screen with session cards showing time and duration, an 'Add Session' button, and empty-state illustration with calendar icon; soft gradients and calm colors, clear readable typographic hierarchy."
+    },
+    {
+      "name": "Settings Screen",
+      "description": "App settings and mode switcher; shows current mode, Premium features, and support entries.",
+      "visual_prompt": "Vertical settings list with a round mode indicator at top (user or baby icon), section headers (App Mode, Features, Support), and tappable row items; neutral background with soft accents matching mode theme."
+    },
+    {
+      "name": "Baby Lock (Baby Mode) Screen",
+      "description": "Full-screen lock interface for Baby Mode with a large lock icon, timer, and unlock hint; parental PIN overlay for unlocking.",
+      "visual_prompt": "Bright, playful gradient background with a large lock icon centered, big timer text, and short unlock hint like 'Tap 3 times in corner to unlock'; show parental PIN input modal overlay as alternate state."
+    },
+    {
+      "name": "Baby Doodle Pad",
+      "description": "Child-friendly simplified doodle canvas with large soft-colored brushes and a Clear button.",
+      "visual_prompt": "Large tactile color circles for brushes, a chunky Clear button, and an expansive white drawing area; use pastel palette and playful rounded shapes."
+    },
+    {
+      "name": "Interactive Shapes Mode",
+      "description": "Touch-responsive shapes playground that animates shapes on touch (premium feature).",
+      "visual_prompt": "Soft pastel background with floating colorful shapes (circles, triangles, squares) that subtly bounce; visual emphasis on playful motion, large shapes, and gentle highlights."
+    },
+    {
+      "name": "Calming Sounds Panel",
+      "description": "Horizontal list of ambient sounds with play/stop controls and premium badges.",
+      "visual_prompt": "Pill-shaped sound cards in a horizontal scroller with icons and names (White Noise, Lullaby, Rain); active sound highlighted; small 'PRO' badge for premium tracks."
+    },
+    {
+      "name": "Parental Dashboard (Modal)",
+      "description": "Premium modal showing session stats: total screen time, average session, and recent sessions list.",
+      "visual_prompt": "Centered card modal with three stat cards on top (total time, total sessions, avg session), a recent sessions list below, and an 'Upgrade to Premium' prompt if locked; soft white card with rounded corners."
+    },
+    {
+      "name": "Doodle Gallery (Modal)",
+      "description": "Modal listing saved doodles with thumbnails, share and delete actions, and an image preview overlay.",
+      "visual_prompt": "Grid/list of thumbnail cards with timestamp, share/delete buttons; tapping opens a full-screen preview over a dark translucent backdrop."
+    },
+    {
+      "name": "Permissions Modal",
+      "description": "Modal prompting the user to open system settings when required permissions are denied.",
+      "visual_prompt": "Centered permission card with title, message, Cancel and 'Open Settings' buttons; neutral surface, clear CTA hierarchy."
+    },
+    {
+      "name": "SVG → PNG Converter Overlay",
+      "description": "WebView-based overlay used internally to rasterize SVG doodles to PNG; appears briefly during save flows.",
+      "visual_prompt": "Full-screen WebView overlay with a conversion spinner and small status text 'Converting…'; minimal chrome."
+    },
+    {
+      "name": "Wellness Insights (Overlay)",
+      "description": "Small insights panel showing streak and weekly minutes, used within Focus screen.",
+      "visual_prompt": "Rounded information card with two stat rows: 'Current Streak' and 'Minutes this week', small chart icon and calm accent color."
+    },
+    {
+      "name": "Permissions Settings",
+      "description": "Screen to request or view current Notifications and Media Library permission statuses.",
+      "visual_prompt": "Two-row settings view: Notifications and Media Library rows with status text and Request button on the right; clean system-like layout."
+    },
+    {
+      "name": "Not Found Screen",
+      "description": "Fallback screen for unknown routes that invites the user to return home.",
+      "visual_prompt": "Simple centered message 'This screen doesn't exist' with a small link/button 'Go to home screen!'; minimal styling."
+    }
+  ]
+}
